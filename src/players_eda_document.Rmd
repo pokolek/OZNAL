@@ -14,7 +14,7 @@ library(corrplot)
 ## Load and Inspect the Dataset
 
 ```{r load-inspect}
-players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
+players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
 glimpse(players) # Provides a brief overview of the dataset
 summary(players) # Summarizes the data giving quick insights
 ```
@@ -66,6 +66,13 @@ players %>%
 Investigate correlations between numerical attributes to identify potential relationships.
 
 ```{r correlations}
+players$value_eur <- as.numeric(gsub("[^0-9.-]", "", players$value_eur))
+players$wage_eur <- as.numeric(gsub("[^0-9.-]", "", players$wage_eur))
+players <- players %>%
+  filter(!is.na(value_eur), !is.na(wage_eur))
+summary(players$value_eur)
+summary(players$wage_eur)
+
 correlation_matrix <- cor(select(players, overall, potential, value_eur, age, wage_eur))
 corrplot(correlation_matrix, method = "circle") # Note: Ensure 'corrplot' package is installed
 ```
