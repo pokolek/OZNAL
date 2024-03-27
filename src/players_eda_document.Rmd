@@ -40,8 +40,41 @@ ggplot(players, aes(x=age)) + geom_histogram(bins=30) + theme_minimal() + ggtitl
 
 Explore relationships, e.g., between a player's overall rating and their value_eur.
 
-```{r relationships}
+```{r relationships - overall}
 ggplot(players, aes(x=overall, y=value_eur)) + geom_point() + theme_minimal() + ggtitle("Overall Rating vs. Market Value")
+```
+
+Players potential and his value
+```{r relationships - potential}
+ggplot(players, aes(x=potential, y=value_eur)) + geom_point() + theme_minimal() + ggtitle("Potential vs. Market Value")
+```
+
+Players age and his value
+```{r relationships - age}
+ggplot(players, aes(x=age, y=value_eur)) + geom_point() + theme_minimal() + ggtitle("Age vs. Market Value")
+```
+
+Players international reputation and his value
+```{r relationships - international reputation}
+ggplot(players, aes(x=international_reputation, y=value_eur)) + geom_point() + theme_minimal() + ggtitle("International reputation vs. Market Value")
+```
+
+
+```{r Histograms for Skill Attributes by Position}
+players_simplified <- players %>%
+  mutate(primary_position = str_split(player_positions, ",", simplify = TRUE)[,1])
+
+# Histograms for Skill Attributes by Primary Position
+players_simplified %>%
+  gather(key="skill", value="value", pace, shooting, passing, dribbling, defending, physic) %>%
+  mutate(skill = factor(skill)) %>%
+  ggplot(aes(x=value, fill=primary_position)) + 
+  geom_histogram(bins=20, alpha=0.5, position="identity") + 
+  facet_wrap(~skill, scales="free_x") +
+  theme_minimal() +
+  theme(legend.position="bottom") +
+  labs(title="Distribution of Skill Attributes by Primary Player Positions", x="Attribute Value", y="Frequency")
+
 ```
 
 ## Comparisons and Aggregations
@@ -77,7 +110,28 @@ correlation_matrix <- cor(select(players, overall, potential, value_eur, age, wa
 corrplot(correlation_matrix, method = "circle") # Note: Ensure 'corrplot' package is installed
 ```
 
-## Advanced Visualizations
+## Regression
+## Hypoteza: Hodnota value_eur vie byt predpovedana pomocou kombinacia atributov:overall, potential, age a international_reputation
 
-Consider creating more complex visualizations like scatter plot matrices, heatmaps, or even geographical plots if data includes location-based attributes.
+## Regression - Linear Regression, Random Forest Regressor, or Gradient Boosting Regressor.
+
+## Evaluation - RMSE and R^2
+
+```
+
+```
+
+## Classification
+## Hypoteza: Atribut player_positions vie byt klasifikovany na zaklade fyzickych atributov ako: height_cm, weight_kg a technickych atributov: pace, shooting, dribbling, defending, physic
+
+## Classification - Logistic Regression, K-Nearest Neighbors, Random Forest Classifier, or Support Vector Machines
+
+## Evaluation - Accuracy, precision, recall, F1 score, confusion matrice
+
+```
+
+```
+
+
+
 
