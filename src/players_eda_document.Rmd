@@ -8,6 +8,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(corrplot)
+library(ggplot2)
 # If needed, install additional libraries like ggplot2, dplyr, corrplot
 ```
 
@@ -20,6 +21,124 @@ summary(players) # Summarizes the data giving quick insights
 ```
 
 ## Data Cleaning
+
+Remove players, that play as a goalkeeper
+
+```{r}
+players <- players %>% 
+  filter(!str_detect(player_positions, "GK")) 
+```
+
+```{r}
+# Selecting specific columns for the pair plot
+selected_columns <- players[, c("value_eur", "potential", "overall", "age", "wage_eur", "height_cm", "weight_kg", "league_level", "club_contract_valid_until", "nation_team_id", "release_clause_eur", "skill_moves", "pace", "shooting", "passing", "dribbling", "defending", "physic")]
+
+# Removing rows with NA values to ensure the plot works correctly
+selected_columns_clean <- na.omit(selected_columns)
+
+# Plot value_eur vs potential
+ggplot(selected_columns_clean, aes(x = potential, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. potential", x = "Potential", y = "Market Value (EUR)")
+
+# Plot value_eur vs overall
+ggplot(selected_columns_clean, aes(x = overall, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. overall", x = "Overall Rating", y = "Market Value (EUR)")
+
+# Plot value_eur vs age
+ggplot(selected_columns_clean, aes(x = age, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. age", x = "Age", y = "Market Value (EUR)")
+
+# Plot value_eur vs wage_eur
+ggplot(selected_columns_clean, aes(x = wage_eur, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. wage_eur", x = "wage_eur", y = "Market Value (EUR)")
+
+# Plot value_eur vs height_cm
+ggplot(selected_columns_clean, aes(x = height_cm, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. height_cm", x = "height_cm", y = "Market Value (EUR)")
+
+# Plot value_eur vs weight_kg
+ggplot(selected_columns_clean, aes(x = weight_kg, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. weight_kg", x = "weight_kg", y = "Market Value (EUR)")
+
+# Plot value_eur vs league_level
+ggplot(selected_columns_clean, aes(x = league_level, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. league_level", x = "league_level", y = "Market Value (EUR)")
+
+# Plot value_eur vs club_contract_valid_until
+ggplot(selected_columns_clean, aes(x = club_contract_valid_until, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. club_contract_valid_until", x = "club_contract_valid_until", y = "Market Value (EUR)")
+
+# Plot value_eur vs nation_team_id
+ggplot(selected_columns_clean, aes(x = nation_team_id, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. nation_team_id", x = "nation_team_id", y = "Market Value (EUR)")
+
+# Plot value_eur vs release_clause_eur
+ggplot(selected_columns_clean, aes(x = release_clause_eur, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. release_clause_eur", x = "release_clause_eur", y = "Market Value (EUR)")
+
+# Plot value_eur vs skill_moves
+ggplot(selected_columns_clean, aes(x = skill_moves, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. skill_moves", x = "skill_moves", y = "Market Value (EUR)")
+
+# Plot value_eur vs pace
+ggplot(selected_columns_clean, aes(x = pace, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. pace", x = "pace", y = "Market Value (EUR)")
+
+# Plot value_eur vs shooting
+ggplot(selected_columns_clean, aes(x = shooting, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. shooting", x = "shooting", y = "Market Value (EUR)")
+
+# Plot value_eur vs passing
+ggplot(selected_columns_clean, aes(x = passing, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. passing", x = "passing", y = "Market Value (EUR)")
+
+# Plot value_eur vs dribbling
+ggplot(selected_columns_clean, aes(x = dribbling, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. dribbling", x = "dribbling", y = "Market Value (EUR)")
+
+# Plot value_eur vs defending
+ggplot(selected_columns_clean, aes(x = defending, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. defending", x = "defending", y = "Market Value (EUR)")
+
+# Plot value_eur vs physic
+ggplot(selected_columns_clean, aes(x = physic, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. physic", x = "physic", y = "Market Value (EUR)")
+```
+
 
 Identify and handle missing values, outliers, and possibly convert data types as needed.
 
@@ -111,7 +230,7 @@ corrplot(correlation_matrix, method = "circle") # Note: Ensure 'corrplot' packag
 ```
 
 ## Regression
-## Hypoteza: Hodnota value_eur vie byt predpovedana pomocou kombinacia atributov:overall, potential, age a international_reputation
+## Hypoteza: Hodnota value_eur vie byt predpovedana pomocou kombinacia atributov:overall, potential, wage_eur
 
 ## Regression - Linear Regression, Random Forest Regressor, or Gradient Boosting Regressor.
 
