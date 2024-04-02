@@ -15,7 +15,8 @@ library(ggplot2)
 ## Load and Inspect the Dataset
 
 ```{r load-inspect}
-players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
+#players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
+players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
 glimpse(players) # Provides a brief overview of the dataset
 summary(players) # Summarizes the data giving quick insights
 ```
@@ -203,7 +204,7 @@ Compare distributions or mean values across different groups, like comparing ave
 ```{r comparisons-aggregations}
 players %>%
   group_by(league_name) %>%
-  summarise(Avg_Overall = max(overall, na.rm = TRUE)) %>%
+  summarise(Avg_Overall = mean(overall, na.rm = TRUE)) %>%
   arrange(desc(Avg_Overall)) %>%
   head(10) %>% # Top 10 leagues by average player rating
   ggplot(aes(x=reorder(league_name, Avg_Overall), y=Avg_Overall)) +
@@ -316,8 +317,78 @@ print(evaluation_metrics)
 ## Classification - Logistic Regression, K-Nearest Neighbors, Random Forest Classifier, or Support Vector Machines
 
 ## Evaluation - Accuracy, precision, recall, F1 score, confusion matrice
+```{r}
+## Classification Analysis
 
+# Filtering out NA values for relevant columns
+players <- na.omit(players[, c("player_positions", "height_cm", "weight_kg", "pace", "shooting", "dribbling", "defending", "physic")])
+
+# Considering only the first listed position for each player
+players$player_positions <- sapply(strsplit(as.character(players$player_positions), ","), `[`, 1)
+
+# Encoding 'player_positions' as a factor
+players$player_positions <- as.factor(players$player_positions)
+
+# Splitting the dataset
+set.seed(42)
+trainingIndex <- createDataPartition(players$player_positions, p = .7, list = FALSE)
+train <- players[trainingIndex,]
+test <- players[-trainingIndex,]
+
+# Preparing training and test data for models
+trainX <- train[, -1]
+trainY <- train[, 1]
+testX <- test[, -1]
+testY <- test[, 1]
+
+# Necessary libraries
+library(caret)
+library(e1071)
+library(randomForest)
+library(class)
+
+# Logistic Regression
+lrModel <- glm(player_positions ~ ., data = train, family = "binomial")
+lrPred <- predict(lrModel, newdata = test, type = "response")
+lrPredFactor <- as.factor(ifelse(lrPred > 0.5, levels(trainY)[2], levels(trainY)[1]))
+confusionMatrix(lrPredFactor, testY)
+
+# K-Nearest Neighbors
+set.seed(42)
+knnModel <- knn(train = trainX, test = testX, cl = trainY, k = 5)
+confusionMatrix(knnModel, testY)
+
+# Random Forest
+set.seed(42)
+rfModel <- randomForest(player_positions ~ ., data = train)
+rfPred <- predict(rfModel, newdata = test)
+confusionMatrix(rfPred, testY)
+
+# Support Vector Machines
+set.seed(42)
+svmModel <- svm(player_positions ~ ., data = train, kernel = "linear", cost = 10, scale = FALSE)
+svmPred <- predict(svmModel, newdata = test)
+confusionMatrix(svmPred, testY)
 ```
+
+
+```{r}
+# Assuming 'players' is your dataset
+
+# Categorize player positions into 'Forwards' and 'Defenders'
+players$general_position <- ifelse(players$primary_position %in% c("ST", "LW", "RW", "CF", "LF", "RF"), "Forward", 
+                                   ifelse(players$primary_position %in% c("CB", "LB", "RB", "LWB", "RWB"), "Defender", NA))
+
+# Filter out players that are not categorized as 'Forward' or 'Defender'
+players_filtered <- players[!is.na(players$general_position), ]
+
+# T-test for 'pace' attribute between Forwards and Defenders
+t_test_pace <- t.test(pace ~ general_position, data = players_filtered)
+print(t_test_pace)
+
+# T-test for 'physic' attribute between Forwards and Defenders
+t_test_physic <- t.test(physic ~ general_position, data = players_filtered)
+print(t_test_physic)
 
 ```
 
