@@ -905,9 +905,9 @@ corrplot(correlation_matrix, method = &quot;circle&quot;) # Note: Ensure &#39;co
 <div id="regression" class="section level2">
 <h2>Regression</h2>
 </div>
-<div id="hypoteza-hodnota-value_eur-vie-byt-predpovedana-pomocou-kombinacia-atributovoverall-potential-age-a-international_reputation" class="section level2">
+<div id="hypoteza-hodnota-value_eur-vie-byt-predpovedana-pomocou-kombinacia-atributovoverall-potential-wage_eur" class="section level2">
 <h2>Hypoteza: Hodnota value_eur vie byt predpovedana pomocou kombinacia
-atributov:overall, potential, age a international_reputation</h2>
+atributov:overall, potential, wage_eur</h2>
 </div>
 <div id="regression---linear-regression-random-forest-regressor-or-gradient-boosting-regressor." class="section level2">
 <h2>Regression - Linear Regression, Random Forest Regressor, or Gradient
@@ -915,7 +915,107 @@ Boosting Regressor.</h2>
 </div>
 <div id="evaluation---rmse-and-r2" class="section level2">
 <h2>Evaluation - RMSE and R^2</h2>
-<pre><code></code></pre>
+<pre class="r"><code>library(caret) # For model evaluation</code></pre>
+<pre><code>## Warning: package &#39;caret&#39; was built under R version 4.3.3</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre><code>## 
+## Attaching package: &#39;caret&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:purrr&#39;:
+## 
+##     lift</code></pre>
+<pre class="r"><code>library(randomForest)</code></pre>
+<pre><code>## Warning: package &#39;randomForest&#39; was built under R version 4.3.3</code></pre>
+<pre><code>## randomForest 4.7-1.1</code></pre>
+<pre><code>## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;randomForest&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     combine</code></pre>
+<pre><code>## The following object is masked from &#39;package:ggplot2&#39;:
+## 
+##     margin</code></pre>
+<pre class="r"><code>library(gbm)</code></pre>
+<pre><code>## Warning: package &#39;gbm&#39; was built under R version 4.3.3</code></pre>
+<pre><code>## Loaded gbm 2.1.9</code></pre>
+<pre><code>## This version of gbm is no longer under development. Consider transitioning to gbm3, https://github.com/gbm-developers/gbm3</code></pre>
+<pre class="r"><code># Split the data into training and test sets
+set.seed(123)  # for reproducible results
+training_indices &lt;- createDataPartition(players$value_eur, p = 0.8, list = FALSE)
+train_data &lt;- players[training_indices, ]
+test_data &lt;- players[-training_indices, ]
+
+# Linear Regression Model
+lm_model &lt;- lm(value_eur ~ overall + potential + wage_eur, data = train_data)
+lm_predictions &lt;- predict(lm_model, test_data)
+lm_rmse &lt;- RMSE(lm_predictions, test_data$value_eur)
+lm_r2 &lt;- R2(lm_predictions, test_data$value_eur)
+
+
+
+# Random Forest Regression Model
+rf_model &lt;- randomForest(value_eur ~ overall + potential + wage_eur, data = train_data, ntree = 100)
+rf_predictions &lt;- predict(rf_model, test_data)
+rf_rmse &lt;- RMSE(rf_predictions, test_data$value_eur)
+rf_r2 &lt;- R2(rf_predictions, test_data$value_eur)
+
+
+# Gradient Boosting Regression Model
+set.seed(123)  # for reproducible results
+gbm_model &lt;- gbm(value_eur ~ overall + potential + wage_eur, data = train_data, distribution = &quot;gaussian&quot;, n.trees = 5000, interaction.depth = 4, shrinkage = 0.01, cv.folds = 5, n.cores = NULL)  # n.cores=NULL will use all available cores
+gbm_predictions &lt;- predict(gbm_model, test_data, n.trees = gbm_model$n.trees)
+gbm_rmse &lt;- RMSE(gbm_predictions, test_data$value_eur)
+gbm_r2 &lt;- R2(gbm_predictions, test_data$value_eur)
+
+
+# Collect the evaluation metrics for all models
+evaluation_metrics &lt;- tibble(
+  Model = c(&quot;Linear Regression&quot;, &quot;Random Forest&quot;, &quot;Gradient Boosting&quot;),
+  RMSE = c(lm_rmse, rf_rmse, gbm_rmse),
+  R_Squared = c(lm_r2, rf_r2, gbm_r2)
+)
+
+# Display the evaluation metrics
+print(evaluation_metrics)</code></pre>
+<pre><code>## # A tibble: 3 × 3
+##   Model                 RMSE R_Squared
+##   &lt;chr&gt;                &lt;dbl&gt;     &lt;dbl&gt;
+## 1 Linear Regression 4711372.     0.328
+## 2 Random Forest     4336732.     0.431
+## 3 Gradient Boosting 4443214.     0.409</code></pre>
+<pre class="r"><code># Calculate the mean of the market value from the training set
+mean_value_eur &lt;- mean(train_data$value_eur)
+
+# Predict the mean for all instances in the test set
+mean_predictions &lt;- rep(mean_value_eur, nrow(test_data))
+
+# Calculate RMSE for the naive predictor
+mean_rmse &lt;- RMSE(mean_predictions, test_data$value_eur)
+
+# Calculate R-squared for the naive predictor
+mean_r2 &lt;- R2(mean_predictions, test_data$value_eur)</code></pre>
+<pre><code>## Warning in cor(obs, pred, use = ifelse(na.rm, &quot;complete.obs&quot;, &quot;everything&quot;)):
+## the standard deviation is zero</code></pre>
+<pre class="r"><code># Display the RMSE and R-squared for the naive model
+naive_metrics &lt;- tibble(
+  Model = &quot;Naive Mean Predictor&quot;,
+  RMSE = mean_rmse,
+  R_Squared = mean_r2
+)
+
+print(naive_metrics)</code></pre>
+<pre><code>## # A tibble: 1 × 3
+##   Model                    RMSE R_Squared
+##   &lt;chr&gt;                   &lt;dbl&gt;     &lt;dbl&gt;
+## 1 Naive Mean Predictor 5745310.        NA</code></pre>
+<pre class="r"><code># Now compare it to the evaluated metrics of your other models
+print(evaluation_metrics)</code></pre>
+<pre><code>## # A tibble: 3 × 3
+##   Model                 RMSE R_Squared
+##   &lt;chr&gt;                &lt;dbl&gt;     &lt;dbl&gt;
+## 1 Linear Regression 4711372.     0.328
+## 2 Random Forest     4336732.     0.431
+## 3 Gradient Boosting 4443214.     0.409</code></pre>
 </div>
 <div id="classification" class="section level2">
 <h2>Classification</h2>
