@@ -1,0 +1,208 @@
+
+---
+title: "Exploratory Data Analysis of Soccer Players Dataset"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(caret)
+library(corrplot)
+library(ggplot2)
+library(e1071)
+library(randomForest)
+library(class)
+library(pROC)
+```
+
+## Load and Inspect the Dataset
+
+```{r load-inspect}
+#players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
+players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
+glimpse(players) # Provides a brief overview of the dataset
+summary(players) # Summarizes the data giving quick insights
+```
+
+## Data Cleaning
+
+Remove players, that play as a goalkeeper
+
+```{r GK}
+players <- players %>% 
+  filter(!str_detect(player_positions, "GK")) 
+```
+
+Identify and handle missing values, outliers, and possibly convert data types as needed.
+
+```{r data-cleaning}
+players <- players %>% 
+  filter(!is.na(overall))
+
+players <- players %>% 
+  filter(!is.na(potential))
+
+players <- players %>% 
+  filter(!is.na(wage_eur))
+
+players <- players %>% 
+  filter(!is.na(value_eur))
+
+#Removing rows with missing values
+```
+
+```{r Prepare Data for Classification}
+# Assuming player_positions column exists and "B" stands for defenders like "CB", "LB", "RB"
+players$IsDefender <- ifelse(grepl("B", players$player_positions), 1, 0) 
+
+# Select predictors - replace this with your actual predictor columns
+predictors <- c("pace", "shooting", "passing", "dribbling", "defending", "physic", "height_cm", "weight_kg")
+
+# Prepare the dataset (ensure that you have no missing values in the predictors and the target variable)
+classification_data <- players %>% 
+  select(IsDefender, all_of(predictors)) %>% 
+  na.omit()
+
+# Create training and testing sets
+set.seed(123) # for reproducibility
+training_rows <- createDataPartition(classification_data$IsDefender, p = 0.8, list = FALSE)
+train_data <- classification_data[training_rows, ]
+test_data <- classification_data[-training_rows, ]
+
+```
+
+```{r Logistic Regression}
+# Logistic Regression Model
+logit_model <- glm(IsDefender ~ ., data = train_data, family = "binomial")
+logit_predictions <- predict(logit_model, newdata = test_data, type = "response")
+logit_predicted_classes <- ifelse(logit_predictions > 0.5, 1, 0)
+# Convert both predicted classes and actual classes to factors with the same levels
+logit_predicted_classes <- factor(logit_predicted_classes, levels = c(0, 1))
+test_data$IsDefender <- factor(test_data$IsDefender, levels = c(0, 1))
+# Create confusion matrix
+logit_confMatrix <- confusionMatrix(logit_predicted_classes, test_data$IsDefender)
+print(logit_confMatrix)
+```
+
+```{r knn_model}
+# # Train k-Nearest Neighbors model
+# knn_model <- knn(train = train_data[, predictors], 
+#                  test = test_data[, predictors], 
+#                  cl = train_data$IsDefender, 
+#                  k = 5)  # Set the number of neighbors to consider
+# 
+# # Make sure the 'train_data' and 'test_data' contain only the predictors and the target variable
+# # This assumes 'predictors' is a character vector of your feature names and 'IsDefender' is your target variable
+# 
+# # First, ensure that your data only contains the necessary columns
+# train_data_knn <- train_data[, c(predictors, "IsDefender")]
+# test_data_knn <- test_data[, c(predictors, "IsDefender")]
+# 
+# # Train k-Nearest Neighbors model with class probabilities using caret::knn3
+# knn_fit <- knn3(x = train_data_knn[, predictors, drop = FALSE], y = train_data_knn$IsDefender, k = 5, prob = TRUE)
+# 
+# # Predict probabilities on the test set
+# knn_prob <- predict(knn_fit, newdata = test_data_knn[, predictors, drop = FALSE], type = "prob")[,2]
+# # Make predictions on the test data
+# knn_predictions <- factor(knn_model, levels = c(0, 1))
+# 
+# # Evaluate performance
+# knn_confMatrix <- confusionMatrix(knn_predictions, test_data$IsDefender)
+# print(knn_confMatrix)
+# Ensure target variable is a factor
+train_data$IsDefender <- as.factor(train_data$IsDefender)
+
+# Train k-Nearest Neighbors model with class probabilities using caret::knn3
+knn_fit <- knn3(train_data[, predictors, drop = FALSE], y = train_data$IsDefender, k = 5, prob = TRUE)
+
+# Predict probabilities on the test set
+knn_prob <- predict(knn_fit, test_data[, predictors, drop = FALSE], type = "prob")[,2]
+
+# Convert probabilities to class predictions using a 0.5 threshold
+knn_class_predictions <- ifelse(knn_prob > 0.5, "1", "0")
+
+# Ensure the predictions are factors with the same levels as the test data target variable
+knn_class_predictions <- factor(knn_class_predictions, levels = levels(train_data$IsDefender))
+
+# Generate the confusion matrix
+knn_confMatrix <- confusionMatrix(knn_class_predictions, test_data$IsDefender)
+
+# Print the confusion matrix
+print(knn_confMatrix)
+```
+
+```{r Naive Bayes Classifier}
+# Naive Bayes Model
+naive_model <- naiveBayes(IsDefender ~ ., data = train_data)
+# Calculating probabilities for Naive Bayes Model
+naive_probs <- predict(naive_model, newdata = test_data, type = "raw")
+naive_predictions_probs <- naive_probs[,2] # Assuming class '1' probabilities are in the second column
+
+# Predict class labels for Naive Bayes Model
+naive_predictions <- predict(naive_model, newdata = test_data)
+# Now you have naive_predictions for the confusionMatrix
+naive_confMatrix <- confusionMatrix(naive_predictions, test_data$IsDefender)
+print(naive_confMatrix)
+```
+
+```{r}
+# ROC and AUC for Logistic Regression
+logit_roc <- roc(test_data$IsDefender ~ logit_predictions, data = test_data)
+logit_auc <- auc(logit_roc)
+
+# ROC and AUC for Naive Bayes - using the corrected probabilities
+naive_roc <- roc(test_data$IsDefender ~ naive_predictions_probs, data = test_data)
+naive_auc <- auc(naive_roc)
+
+# ROC and AUC for kNN
+knn_roc <- roc(response = test_data$IsDefender, predictor = knn_prob)
+knn_auc <- auc(knn_roc)
+
+# Plotting ROC Curves for all models
+plot(logit_roc, col = "blue", main = "ROC Curves for Classification Models")
+lines(naive_roc, col = "red")
+lines(knn_roc, col = "green")
+legend("bottomright", 
+       legend = c(sprintf("Logistic Regression (AUC = %.2f)", logit_auc),
+                  sprintf("Naive Bayes (AUC = %.2f)", naive_auc),
+                  sprintf("kNN (AUC = %.2f)", knn_auc)),
+       col = c("blue", "red", "green"), lwd = 2)
+
+```
+
+```{r}
+# Compile AUC values into a summary table for all models
+auc_summary_all <- tibble(
+  Model = c("Logistic Regression", "Naive Bayes", "kNN"),
+  AUC = c(logit_auc, naive_auc, knn_auc)
+)
+
+# Display the AUC summary table for all models
+knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Models")
+
+```
+
+## Model Evaluation
+
+In this section, we evaluate the performance of three different classification models: Logistic Regression, k-Nearest Neighbors (kNN), and Naive Bayes. We will compare their performance using both confusion matrices and ROC curves.
+
+### Logistic Regression Evaluation
+
+The Logistic Regression model achieved an accuracy of 89.52%. This model has demonstrated good predictive power, with a high Kappa statistic of 0.7854 indicating substantial agreement beyond chance. The model has a high sensitivity (90.30%) and specificity (88.45%), reflecting a balanced ability to identify both classes correctly.
+
+### k-Nearest Neighbors (kNN) Evaluation
+
+The kNN model, using a threshold of 0.5 to convert probabilities to class predictions, yielded an accuracy of 90.26%. This represents a slight improvement over the Logistic Regression model. The Kappa statistic of 0.799 suggests strong agreement. Sensitivity is higher at 92.83%, indicating that kNN is better at identifying defenders compared to the Logistic Regression model. The model also maintains good specificity at 86.69%.
+
+### Naive Bayes Evaluation
+
+The Naive Bayes model, while slightly less accurate at 84.45%, still performs reasonably well. It has a lower Kappa statistic of 0.6776, indicating moderate agreement. The sensitivity and specificity are 88.99% and 78.15%, respectively, suggesting that while it's good at identifying defenders, it has a higher rate of false positives compared to the other models.
+
+### ROC Curve Comparison
+
+The ROC curves for the three models illustrate their performance in classifying defenders. All three models show good performance with AUC values close to 1. The Logistic Regression model leads slightly with an AUC of 0.96, followed closely by kNN with an AUC of 0.95, and Naive Bayes with an AUC of 0.94.
+
+## Conclusion
+
+Based on the evaluation metrics, the k-Nearest Neighbors (kNN) model has the highest accuracy and a balanced accuracy rate, making it slightly superior in this specific case. However, Logistic Regression also shows robust performance and may be preferred for its interpretability. Naive Bayes, while not performing as strongly, is computationally efficient and could be favored for its speed in larger datasets or real-time applications.
