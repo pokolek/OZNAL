@@ -22,8 +22,8 @@ library(car)
 ## Load and Inspect the Dataset
 
 ```{r load-inspect}
-players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
-#players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
+# players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
+players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
 glimpse(players) # Provides a brief overview of the dataset
 summary(players) # Summarizes the data giving quick insights
 ```
@@ -563,50 +563,73 @@ From the results provided, you have several sets of confusion matrices and corre
 
 Overall, the results suggest that your model is robust and performs well under general conditions but may require adjustments or more sophisticated methods to handle data subsets where player attributes significantly deviate from the norm. It also underscores the importance of examining model performance across different data segments to ensure consistent reliability.
 
-```{r}
-library(randomForest)
-library(xgboost)
-library(caret)
+The `kknn`, `knn3`, and `train(method = "knn")` from `caret` are all functions in R for k-nearest neighbors modeling, but they differ in their implementation and additional features they provide:
 
-# Assuming 'train_data' is already prepared and contains the target 'IsDefender'
-# and that 'train_data' and 'test_data' are already split.
+### `kknn` from the `kknn` package:
+- `kknn` stands for kernel k-nearest neighbors.
+- It is an enhanced version of the basic k-NN algorithm.
+- It offers the option to use different kernel functions to weight the contributions of neighbors.
+- Provides additional flexibility such as weighting the neighbors based on distance, which can give better prediction performance especially in cases where the decision boundary is not well defined.
+- Has options for dealing with imbalanced classes using distance weighting.
 
-# Fit Logistic Regression
-logit_model <- glm(IsDefender ~ ., data = train_data, family = "binomial")
+### `knn3` from the `class` package:
+- `knn3` is a traditional k-nearest neighbors implementation.
+- It is a simple and straightforward approach to k-NN, providing basic functionality without the enhanced features found in `kknn`.
+- `knn3` does not natively support weighted distances or kernel functions.
+- It is typically used when a basic k-NN model is sufficient, and you don't need the additional complexity of distance-weighted neighbors.
 
-# Fit Random Forest
-rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, ntree = 500)
+### `train(method = "knn")` from the `caret` package:
+- The `train` function with the `method = "knn"` argument is part of the `caret` package, which provides a consistent interface for hundreds of machine learning algorithms.
+- It allows for easy use of different modeling techniques without having to learn the syntax for each model.
+- The `train` function includes automatic tuning of parameters, such as finding the optimal `k` through cross-validation.
+- It offers extensive pre-processing capabilities, including feature scaling and selection.
+- You can also easily compare performance across multiple models and integrate complex resampling techniques like bootstrapping or repeated cross-validation.
 
-# # Fit GBM
-# control <- trainControl(method = "cv", number = 10)
-# gbm_model <- train(IsDefender ~ ., data = train_data, method = "gbm", trControl = control, verbose = FALSE)
+In summary, `kknn` is best when you want a more sophisticated approach to k-NN with kernel weighting, `knn3` is good for basic k-NN modeling, and `train(method = "knn")` from `caret` is ideal for a comprehensive approach with additional features like automated tuning and data pre-processing. The choice between them will depend on the specific needs of your analysis and your preference for certain functionalities.
 
-# Extract feature importance
-logit_importance <- summary(logit_model)$coefficients
-rf_importance <- importance(rf_model)
-# gbm_importance <- varImp(gbm_model)$importance
-
-# Print importances
-print("Logistic Regression Coefficients:")
-print(logit_importance)
-
-print("Random Forest Feature Importance:")
-print(rf_importance)
+```{r knn tuning}
 # 
-# print("GBM Feature Importance:")
-# print(gbm_importance)
-
-
+# # Prepare your data if not already done
+# # train_data, test_data
+# 
+# # Set up cross-validation - sets up how the training process should handle cross-validation.
+# train_control <- trainControl(
+#   method = "cv", 
+#   number = 10,  # using 10-fold cross-validation
+#   savePredictions = "final"
+# )
+# 
+# # Define the tuning grid
+# k_values <- data.frame(k = seq(1, 50, by = 1))  # testing k from 1 to 30
+# 
+# # Train the model
+# set.seed(123)  # for reproducibility
+# 
+# # This function does the heavy lifting by training a k-NN model for each k value in the defined grid and evaluating its performance using the specified cross-validation strategy.
+# knn_results <- train(
+#   x = train_data[, predictors, drop = FALSE], 
+#   y = train_data$IsDefender, 
+#   method = "knn",
+#   # This parameter allows you to pass the range of k values you want to test.
+#   tuneGrid = k_values,
+#   trControl = train_control,
+#   # "scale": This ensures that the feature scaling is performed, which is crucial for k-NN models because they rely on distance calculations.
+#   preProcess = "scale"
+# )
+# 
+# # Print the best model's results
+# print(knn_results)
+# plot(knn_results)
 ```
 
-```{r knn}
+```{r knn prob}
 
 # Train k-Nearest Neighbors model
 # Target variable is a factor for classification
 train_data$IsDefender <- as.factor(train_data$IsDefender)
 
 # Train k-Nearest Neighbors model with class probabilities
-knn_fit <- knn3(x = train_data[, predictors, drop = FALSE], y = train_data$IsDefender, k = 5, prob = TRUE)
+knn_fit <- knn3(x = train_data[, predictors, drop = FALSE], y = train_data$IsDefender, k = 23, prob = TRUE)
 
 # Predict probabilities on the test set
 # Note: Ensure that test_data contains the same predictors as train_data
@@ -626,37 +649,185 @@ print(knn_confMatrix)
 
 ```
 
-```{r knn tuning}
+```{r knn prob train}
+# Predict probabilities on the training set itself
+knn_prob <- predict(knn_fit, newdata = train_data[, predictors, drop = FALSE], type = "prob")[,2]
 
-# Prepare your data if not already done
-# train_data, test_data
+# Convert probabilities to class predictions using a 0.5 threshold
+knn_class_predictions <- ifelse(knn_prob > 0.5, "1", "0")
 
-# Set up cross-validation
-train_control <- trainControl(
-  method = "cv", 
-  number = 10,  # using 10-fold cross-validation
-  savePredictions = "final"
-)
+# Ensure the predictions are factors with the same levels as the training data target variable
+knn_class_predictions <- factor(knn_class_predictions, levels = levels(train_data$IsDefender))
 
-# Define the tuning grid
-k_values <- data.frame(k = seq(1, 20, by = 1))  # testing k from 1 to 20
+# Generate the confusion matrix on the training data
+knn_train_confMatrix <- confusionMatrix(knn_class_predictions, train_data$IsDefender)
 
-# Train the model
-set.seed(123)  # for reproducibility
-knn_results <- train(
-  x = train_data[, predictors, drop = FALSE], 
-  y = train_data$IsDefender, 
-  method = "knn", 
-  tuneGrid = k_values,
-  trControl = train_control,
-  preProcess = "scale"  # scaling features
-)
-
-# Print the best model's results
-print(knn_results)
-plot(knn_results)
+# Print the confusion matrix
+print(knn_train_confMatrix)
 ```
 
+To compare the performance of the k-Nearest Neighbors (k-NN) model on both the training and test datasets, you've provided confusion matrices and associated statistics from each dataset. Here's a detailed comparison of these two performance outcomes:
+
+### Overview
+- **Test Data Results**: Performance measures when the model is used to predict data it has not seen during training.
+- **Training Data Results**: Performance measures when the model is used to predict the data it was trained on, which typically shows how well the model fits the training data.
+
+### Test Data Performance
+- **Accuracy**: 78.79%
+- **Kappa**: 0.5755
+- **Sensitivity (Recall) for '0'**: 74.90%
+- **Specificity for '0'**: 84.17%
+- **Positive Predictive Value (Precision) for '0'**: 86.78%
+- **Negative Predictive Value for '0'**: 70.75%
+- **Balanced Accuracy**: 79.54%
+
+### Training Data Performance
+- **Accuracy**: 79.98%
+- **Kappa**: 0.5974
+- **Sensitivity (Recall) for '0'**: 76.89%
+- **Specificity for '0'**: 84.33%
+- **Positive Predictive Value (Precision) for '0'**: 87.38%
+- **Negative Predictive Value for '0'**: 72.11%
+- **Balanced Accuracy**: 80.61%
+
+### Key Comparisons:
+- **Accuracy**: The model is slightly more accurate on the training data (79.98%) compared to the test data (78.79%). This is expected as models generally perform better on the data they were trained on.
+- **Kappa**: Indicates a moderate agreement in both scenarios but slightly higher in the training data, suggesting better performance consistency.
+- **Sensitivity and Specificity**: The model is slightly more sensitive on the training data, meaning it's better at identifying true positives during training. Specificity is nearly the same, indicating consistent performance in identifying true negatives across both datasets.
+- **Positive and Negative Predictive Values**: These values are higher on the training data, indicating that the model is more reliable in its predictions when dealing with known data.
+- **Balanced Accuracy**: Shows a marginal improvement in the training data compared to the test data, suggesting a slightly better balance between sensitivity and specificity during training.
+
+### Implications:
+- **Generalization**: The similar performance metrics (though slightly better on training) suggest that the model generalizes reasonably well but could potentially be improved to reduce overfitting and enhance predictive performance on unseen data.
+- **Model Tuning**: Consider tuning model parameters (like `k`) or using feature selection/engineering to potentially enhance model performance, especially on unseen data.
+- **Further Evaluation**: It's beneficial to look into other metrics such as F1-score, ROC curves, and AUC, especially for imbalance class scenarios, to gain a deeper understanding of model performance.
+
+Overall, the k-NN model shows good performance, but like most models, it performs slightly better on training data. Your analysis should consider whether the slight decrease in performance on test data is acceptable based on your specific use case requirements.
+
+```{r kknn}
+
+# set.seed(123)  # for reproducibility
+# 
+# # Fit a weighted k-NN model
+# knn_weighted <- kknn(IsDefender ~ ., train = train_data, test = test_data, k = 23, distance = 2, kernel = "optimal")
+# 
+# # Predict on the test set (use "prob" for probabilities)
+# knn_weighted_prob <- predict(knn_weighted, type = "prob")
+# # The predict function returns a matrix of probabilities, so select the second column for the '1' class
+# knn_weighted_prob_class1 <- knn_weighted_prob[,2]
+# # Convert probabilities to class predictions using a 0.5 threshold
+# knn_weighted_predictions <- ifelse(knn_weighted_prob_class1 > 0.5, "1", "0")
+# # Ensure the predictions are factors with the same levels as the target variable
+# knn_weighted_predictions <- factor(knn_weighted_predictions, levels = levels(train_data$IsDefender))
+# 
+# # Generate the confusion matrix
+# knn_weighted_confMatrix <- confusionMatrix(knn_weighted_predictions, test_data$IsDefender)
+# print(knn_weighted_confMatrix)
+# 
+
+```
+
+```{r }
+# Train a Random Forest model with OOB error tracking
+set.seed(123)
+rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, ntree = 500, do.trace = 100, keep.forest = TRUE)
+
+# Plot OOB error
+plot(rf_model$err.rate[, "OOB"], type = "l", xlab = "Number of Trees", ylab = "OOB Error Rate")
+
+```
+
+
+```{r rf}
+
+rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, ntree = 100)
+
+importance <- importance(rf_model)
+
+print(importance)
+
+
+# Predict on test data
+test_predictions <- predict(rf_model, newdata = test_data)
+
+# Generating the confusion matrix
+test_data$IsDefender <- factor(test_data$IsDefender, levels = levels(test_predictions))
+conf_mat <- confusionMatrix(test_predictions, test_data$IsDefender)
+
+# Print the confusion matrix and related statistics
+print(conf_mat)
+
+```
+
+The output you provided includes the feature importance scores from a Random Forest model and the performance metrics from a confusion matrix based on predictions made on the test data. Here’s a detailed explanation of each part of this output:
+
+### Feature Importance
+The `importance` function from the Random Forest model provides two types of metrics:
+- **MeanDecreaseAccuracy**: Indicates how much the accuracy of the model decreases when a feature is randomly permuted (shuffled). This metric reflects the impact of the feature on the model’s predictive accuracy.
+- **MeanDecreaseGini**: Represents the total decrease in node impurity (measured by the Gini index) that results from splits over that feature, averaged over all trees. A higher value indicates a more important feature.
+
+**Analysis of Features:**
+- **Defending** has the highest importance scores in both metrics (MeanDecreaseAccuracy = 85.33, MeanDecreaseGini = 2118.21), making it the most influential feature in predicting whether a player is a defender or not.
+- **Shooting** and **Pace** also show high importance, especially in the Gini index, suggesting these features significantly help in dividing the player data into distinct, homogeneous groups.
+- **Physic, Height_cm**, and **Weight_kg** have lower importance scores, indicating they have less impact on the model's predictions compared to skills-related features.
+
+### Confusion Matrix and Statistics
+The confusion matrix compares the actual target values with those predicted by the model, providing a clear picture of the model's performance:
+
+**Matrix Breakdown:**
+- **True Positives (TP)**: 1829 - Players correctly identified as non-defenders.
+- **True Negatives (TN)**: 1243 - Players correctly identified as defenders.
+- **False Positives (FP)**: 185 - Players incorrectly identified as non-defenders.
+- **False Negatives (FN)**: 151 - Players incorrectly identified as defenders.
+
+**Performance Metrics:**
+- **Accuracy (90.14%)**: High accuracy indicates that the model correctly predicts both defenders and non-defenders a large percentage of the time.
+- **Kappa (0.7968)**: A high Kappa score suggests that the agreement between predicted and actual classifications is substantial beyond chance.
+- **Sensitivity (92.37%)**: High sensitivity means the model is very good at identifying actual non-defenders.
+- **Specificity (87.04%)**: This value shows that the model also performs well in identifying actual defenders.
+- **Positive Predictive Value (90.81%)**: High precision for predicting non-defenders indicates a low false-positive rate.
+- **Negative Predictive Value (89.17%)**: Indicates that the classification of defenders is also reliable.
+- **Balanced Accuracy (89.71%)**: Balances sensitivity and specificity, showing that the model is equally adept at identifying both classes.
+- **Mcnemar's Test (P-value = 0.07181)**: Suggests no significant bias between FP and FN rates, indicating a balanced performance across both types of errors.
+
+### Implications:
+The Random Forest model demonstrates strong performance metrics, indicating it is highly effective at classifying players as defenders or not based on the given features. The high sensitivity and specificity suggest that the model is balanced and robust, making it a reliable tool for predictions in this context. The feature importance scores help in understanding which attributes are most critical in making these predictions, guiding future data collection and feature engineering efforts to enhance model performance further.
+
+```{r}
+# library(randomForest)
+# library(xgboost)
+# library(caret)
+# 
+# # Assuming 'train_data' is already prepared and contains the target 'IsDefender'
+# # and that 'train_data' and 'test_data' are already split.
+# 
+# # Fit Logistic Regression
+# logit_model <- glm(IsDefender ~ ., data = train_data, family = "binomial")
+# 
+# # Fit Random Forest
+# rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, ntree = 500)
+# 
+# # # Fit GBM
+# # control <- trainControl(method = "cv", number = 10)
+# # gbm_model <- train(IsDefender ~ ., data = train_data, method = "gbm", trControl = control, verbose = FALSE)
+# 
+# # Extract feature importance
+# logit_importance <- summary(logit_model)$coefficients
+# rf_importance <- importance(rf_model)
+# # gbm_importance <- varImp(gbm_model)$importance
+# 
+# # Print importances
+# print("Logistic Regression Coefficients:")
+# print(logit_importance)
+# 
+# print("Random Forest Feature Importance:")
+# print(rf_importance)
+# # 
+# # print("GBM Feature Importance:")
+# # print(gbm_importance)
+# 
+
+```
 
 <!-- ```{r Naive Bayes Classifier} -->
 <!-- # Naive Bayes Model -->
