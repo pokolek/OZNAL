@@ -1,7 +1,9 @@
 
 ---
 title: "Exploratory Data Analysis of Soccer Players Dataset"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -451,8 +453,10 @@ reduced_train_data <- classification_data[training_rows, ]
 reduced_test_data <- classification_data[-training_rows, ]
 ```
 
+# Fit Logistic Regression Model with reduced predictors
+
 ```{r}
-# Logistic Regression Model with reduced predictors
+# 
 logit_model <- glm(IsDefender ~ ., data = reduced_train_data, family = "binomial")
 logit_predictions <- predict(logit_model, newdata = reduced_test_data, type = "response")
 logit_predicted_classes <- ifelse(logit_predictions > 0.5, 1, 0)
@@ -487,8 +491,9 @@ From these observations, we can conclude that while simplifying the model can ha
 
 The results demonstrate the importance of including a comprehensive set of features that capture the full spectrum of influences on the target variable. For a nuanced decision like determining a player's position, which can be influenced by a variety of factors, a more complex model with a richer feature set appears to provide better performance.
 
-```{r Logistic Regression Full Model on Train Data}
 # Fit Logistic Regression Model on the full training data
+```{r Logistic Regression Full Model on Train Data}
+
 full_logit_model_train <- glm(IsDefender ~ ., data = train_data, family = "binomial")
 
 # Predict on the training data
@@ -505,6 +510,8 @@ print(train_confMatrix)
 
 ```
 
+# Fit Logistic Regression Model on the full test data
+
 ```{r Logistic Regression Full Model on Test Data}
 # Predict on the test data
 test_predictions <- predict(full_logit_model_train, newdata = test_data, type = "response")
@@ -518,6 +525,8 @@ test_data$IsDefender <- factor(test_data$IsDefender, levels = c(0, 1))
 test_confMatrix <- confusionMatrix(test_pred_classes, test_data$IsDefender)
 print(test_confMatrix)
 ```
+
+# Fit Logistic Regression Model on the subset
 
 ```{r subser}
 # Example: Analyze subset where 'defending' is above average
@@ -563,63 +572,40 @@ From the results provided, you have several sets of confusion matrices and corre
 
 Overall, the results suggest that your model is robust and performs well under general conditions but may require adjustments or more sophisticated methods to handle data subsets where player attributes significantly deviate from the norm. It also underscores the importance of examining model performance across different data segments to ensure consistent reliability.
 
-The `kknn`, `knn3`, and `train(method = "knn")` from `caret` are all functions in R for k-nearest neighbors modeling, but they differ in their implementation and additional features they provide:
-
-### `kknn` from the `kknn` package:
-- `kknn` stands for kernel k-nearest neighbors.
-- It is an enhanced version of the basic k-NN algorithm.
-- It offers the option to use different kernel functions to weight the contributions of neighbors.
-- Provides additional flexibility such as weighting the neighbors based on distance, which can give better prediction performance especially in cases where the decision boundary is not well defined.
-- Has options for dealing with imbalanced classes using distance weighting.
-
-### `knn3` from the `class` package:
-- `knn3` is a traditional k-nearest neighbors implementation.
-- It is a simple and straightforward approach to k-NN, providing basic functionality without the enhanced features found in `kknn`.
-- `knn3` does not natively support weighted distances or kernel functions.
-- It is typically used when a basic k-NN model is sufficient, and you don't need the additional complexity of distance-weighted neighbors.
-
-### `train(method = "knn")` from the `caret` package:
-- The `train` function with the `method = "knn"` argument is part of the `caret` package, which provides a consistent interface for hundreds of machine learning algorithms.
-- It allows for easy use of different modeling techniques without having to learn the syntax for each model.
-- The `train` function includes automatic tuning of parameters, such as finding the optimal `k` through cross-validation.
-- It offers extensive pre-processing capabilities, including feature scaling and selection.
-- You can also easily compare performance across multiple models and integrate complex resampling techniques like bootstrapping or repeated cross-validation.
-
-In summary, `kknn` is best when you want a more sophisticated approach to k-NN with kernel weighting, `knn3` is good for basic k-NN modeling, and `train(method = "knn")` from `caret` is ideal for a comprehensive approach with additional features like automated tuning and data pre-processing. The choice between them will depend on the specific needs of your analysis and your preference for certain functionalities.
 
 ```{r knn tuning}
-# 
-# # Prepare your data if not already done
-# # train_data, test_data
-# 
-# # Set up cross-validation - sets up how the training process should handle cross-validation.
-# train_control <- trainControl(
-#   method = "cv", 
-#   number = 10,  # using 10-fold cross-validation
-#   savePredictions = "final"
-# )
-# 
-# # Define the tuning grid
-# k_values <- data.frame(k = seq(1, 50, by = 1))  # testing k from 1 to 30
-# 
-# # Train the model
-# set.seed(123)  # for reproducibility
-# 
-# # This function does the heavy lifting by training a k-NN model for each k value in the defined grid and evaluating its performance using the specified cross-validation strategy.
-# knn_results <- train(
-#   x = train_data[, predictors, drop = FALSE], 
-#   y = train_data$IsDefender, 
-#   method = "knn",
-#   # This parameter allows you to pass the range of k values you want to test.
-#   tuneGrid = k_values,
-#   trControl = train_control,
-#   # "scale": This ensures that the feature scaling is performed, which is crucial for k-NN models because they rely on distance calculations.
-#   preProcess = "scale"
-# )
-# 
-# # Print the best model's results
-# print(knn_results)
-# plot(knn_results)
+
+# Prepare your data if not already done
+# train_data, test_data
+
+# Set up cross-validation - sets up how the training process should handle cross-validation.
+train_control <- trainControl(
+  method = "cv",
+  number = 10,  # using 10-fold cross-validation
+  savePredictions = "final"
+)
+
+# Define the tuning grid
+k_values <- data.frame(k = seq(1, 50, by = 1))  # testing k from 1 to 30
+
+# Train the model
+set.seed(123)  # for reproducibility
+
+# This function does the heavy lifting by training a k-NN model for each k value in the defined grid and evaluating its performance using the specified cross-validation strategy.
+knn_results <- train(
+  x = train_data[, predictors, drop = FALSE],
+  y = train_data$IsDefender,
+  method = "knn",
+  # This parameter allows you to pass the range of k values you want to test.
+  tuneGrid = k_values,
+  trControl = train_control,
+  # "scale": This ensures that the feature scaling is performed, which is crucial for k-NN models because they rely on distance calculations.
+  preProcess = "scale"
+)
+
+# Print the best model's results
+print(knn_results)
+plot(knn_results)
 ```
 
 ```{r knn prob}
@@ -629,7 +615,7 @@ In summary, `kknn` is best when you want a more sophisticated approach to k-NN w
 train_data$IsDefender <- as.factor(train_data$IsDefender)
 
 # Train k-Nearest Neighbors model with class probabilities
-knn_fit <- knn3(x = train_data[, predictors, drop = FALSE], y = train_data$IsDefender, k = 23, prob = TRUE)
+knn_fit <- knn3(x = train_data[, predictors, drop = FALSE], y = train_data$IsDefender, k = 35, prob = TRUE)
 
 # Predict probabilities on the test set
 # Note: Ensure that test_data contains the same predictors as train_data
@@ -651,10 +637,10 @@ print(knn_confMatrix)
 
 ```{r knn prob train}
 # Predict probabilities on the training set itself
-knn_prob <- predict(knn_fit, newdata = train_data[, predictors, drop = FALSE], type = "prob")[,2]
+knn_prob_train <- predict(knn_fit, newdata = train_data[, predictors, drop = FALSE], type = "prob")[,2]
 
 # Convert probabilities to class predictions using a 0.5 threshold
-knn_class_predictions <- ifelse(knn_prob > 0.5, "1", "0")
+knn_class_predictions <- ifelse(knn_prob_train > 0.5, "1", "0")
 
 # Ensure the predictions are factors with the same levels as the training data target variable
 knn_class_predictions <- factor(knn_class_predictions, levels = levels(train_data$IsDefender))
@@ -704,28 +690,19 @@ To compare the performance of the k-Nearest Neighbors (k-NN) model on both the t
 
 Overall, the k-NN model shows good performance, but like most models, it performs slightly better on training data. Your analysis should consider whether the slight decrease in performance on test data is acceptable based on your specific use case requirements.
 
-```{r kknn}
 
-# set.seed(123)  # for reproducibility
-# 
-# # Fit a weighted k-NN model
-# knn_weighted <- kknn(IsDefender ~ ., train = train_data, test = test_data, k = 23, distance = 2, kernel = "optimal")
-# 
-# # Predict on the test set (use "prob" for probabilities)
-# knn_weighted_prob <- predict(knn_weighted, type = "prob")
-# # The predict function returns a matrix of probabilities, so select the second column for the '1' class
-# knn_weighted_prob_class1 <- knn_weighted_prob[,2]
-# # Convert probabilities to class predictions using a 0.5 threshold
-# knn_weighted_predictions <- ifelse(knn_weighted_prob_class1 > 0.5, "1", "0")
-# # Ensure the predictions are factors with the same levels as the target variable
-# knn_weighted_predictions <- factor(knn_weighted_predictions, levels = levels(train_data$IsDefender))
-# 
-# # Generate the confusion matrix
-# knn_weighted_confMatrix <- confusionMatrix(knn_weighted_predictions, test_data$IsDefender)
-# print(knn_weighted_confMatrix)
-# 
+When determining the optimal number of neighbors (k) for the k-Nearest Neighbors model, I considered how the accuracy of the model changes as k varies. The plot of model accuracy against k displays a pattern where the model's performance improves significantly with an initial increase in the number of neighbors, which is reflective of the model leveraging more data to make informed decisions.
 
-```
+*Around k=20, the accuracy begins to level off, indicating that adding more neighbors beyond this point doesn't substantially improve the model's performance. This plateau suggests that we've captured the essential patterns in the data by this stage, and further increases in k result primarily in computational redundancy rather than enhanced predictive power.
+
+Given this observation, I chose k=35, which is on this plateau. This choice is strategic for a few reasons:
+
+1. It avoids the risks associated with a too-low k, such as noise and outlier sensitivity, which could compromise the model's generalizability.
+2. It prevents the complexity and potential computational burden that a too-high k would introduce, which might be unnecessary given the lack of significant accuracy gains.
+3. It positions us in a 'safe zone' where the model is neither too simplistic to capture the nuances of the data nor too complex to be bogged down by noise.
+
+Lastly, the selection of k=35 also demonstrates stability in the model's performance. There's no indication of overfitting, as we might expect if the accuracy started to decline with larger values of k. This balance between bias and variance, or simplicity and complexity, suggests that k=35 is a reasonable choice for our model, striking a good balance between accuracy and computational efficiency.
+
 
 ```{r }
 # Train a Random Forest model with OOB error tracking
@@ -736,23 +713,51 @@ rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, n
 plot(rf_model$err.rate[, "OOB"], type = "l", xlab = "Number of Trees", ylab = "OOB Error Rate")
 
 ```
+Out-of-Bag (OOB) error is a method of measuring the prediction error of random forests, gradient boosting, and other ensemble classifiers that bootstrap the data, i.e., sample the data with replacement. Here's the process in brief:
 
+1. **Bootstrap Sampling**: When building each tree, the algorithm samples from the original dataset with replacement, to create a bootstrap dataset. This bootstrap dataset is used to grow the tree. Because sampling is with replacement, some observations may be repeated in the bootstrap dataset while others are left out.
 
-```{r rf}
+2. **OOB Instances**: The left-out observations that are not included in the bootstrap sample for creating a tree are known as OOB instances. Since these instances are not used in the construction of a particular tree, they can be used as a test set to assess the performance of that tree.
 
+3. **Error Estimation**: For each tree, the OOB error is the prediction error calculated on the OOB instances. It's like a built-in cross-validation method at each step of the ensemble model building.
+
+4. **Ensemble OOB Error**: The overall OOB error for the forest is calculated by averaging the OOB errors across all trees in the ensemble.
+
+OOB error provides a handy and unbiased estimate of the model accuracy without needing a separate validation set or cross-validation, which can be especially useful when the dataset is small.
+
+The plot demonstrates the Out-of-Bag (OOB) error rate for a Random Forest model as a function of the number of trees included in the model. To interpret the plot and decide on the optimal number of trees, consider the following points:
+
+1. **Sharp Decline**: At the beginning, as we start from a small number of trees, there is a significant decrease in the OOB error rate. This indicates that adding more trees initially leads to a substantial improvement in the model's ability to predict accurately.
+
+2. **Flattening Curve**: As the number of trees increases, the rate of decrease in the OOB error slows down and the curve begins to flatten. This indicates that each additional tree contributes less to improving the model's performance.
+
+3. **Stabilization Point**: Beyond a certain number of trees, the OOB error rate stabilizes and we see very minimal fluctuations. This suggests that the model has reached its performance limit given the current data and hyperparameters.
+
+4. **Selection of Number of Trees**: The choice of the optimal number of trees should be where the OOB error rate has stabilized and before it plateaus completely to avoid unnecessary computation and potential overfitting. In this plot, around 100 trees could be a practical choice since the OOB error does not significantly improve after this point.
+
+5. **Minimal Gains Beyond**: After approximately 100 trees, the gains from adding more trees are minimal. The OOB error rates between 100 and 500 trees are close, indicating that increasing the number of trees beyond 100 doesn't lead to meaningful improvements in this case.
+
+In conclusion, given the pattern observed in the OOB error rate plot, choosing 100 trees for the Random Forest model would likely be sufficient and computationally efficient while maintaining high predictive accuracy.
+
+```{r rf test}
+# Fit the Random Forest model
 rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, ntree = 100)
 
+# Get the importance of predictors
 importance <- importance(rf_model)
-
 print(importance)
 
+# Predict on the test data to get the probabilities
+rf_prob <- predict(rf_model, newdata = test_data, type = "prob")[, "1"]
 
-# Predict on test data
-test_predictions <- predict(rf_model, newdata = test_data)
+# Convert probabilities to binary class predictions using a 0.5 threshold
+rf_predictions <- ifelse(rf_prob > 0.5, "1", "0")
 
-# Generating the confusion matrix
-test_data$IsDefender <- factor(test_data$IsDefender, levels = levels(test_predictions))
-conf_mat <- confusionMatrix(test_predictions, test_data$IsDefender)
+# Convert rf_predictions to a factor with levels corresponding to the model's classes
+rf_predictions <- factor(rf_predictions, levels = levels(train_data$IsDefender))
+
+# Generate the confusion matrix
+conf_mat <- confusionMatrix(rf_predictions, test_data$IsDefender)
 
 # Print the confusion matrix and related statistics
 print(conf_mat)
@@ -771,133 +776,134 @@ The `importance` function from the Random Forest model provides two types of met
 - **Shooting** and **Pace** also show high importance, especially in the Gini index, suggesting these features significantly help in dividing the player data into distinct, homogeneous groups.
 - **Physic, Height_cm**, and **Weight_kg** have lower importance scores, indicating they have less impact on the model's predictions compared to skills-related features.
 
-### Confusion Matrix and Statistics
-The confusion matrix compares the actual target values with those predicted by the model, providing a clear picture of the model's performance:
 
-**Matrix Breakdown:**
-- **True Positives (TP)**: 1829 - Players correctly identified as non-defenders.
-- **True Negatives (TN)**: 1243 - Players correctly identified as defenders.
-- **False Positives (FP)**: 185 - Players incorrectly identified as non-defenders.
-- **False Negatives (FN)**: 151 - Players incorrectly identified as defenders.
+```{r rf train}
 
-**Performance Metrics:**
-- **Accuracy (90.14%)**: High accuracy indicates that the model correctly predicts both defenders and non-defenders a large percentage of the time.
-- **Kappa (0.7968)**: A high Kappa score suggests that the agreement between predicted and actual classifications is substantial beyond chance.
-- **Sensitivity (92.37%)**: High sensitivity means the model is very good at identifying actual non-defenders.
-- **Specificity (87.04%)**: This value shows that the model also performs well in identifying actual defenders.
-- **Positive Predictive Value (90.81%)**: High precision for predicting non-defenders indicates a low false-positive rate.
-- **Negative Predictive Value (89.17%)**: Indicates that the classification of defenders is also reliable.
-- **Balanced Accuracy (89.71%)**: Balances sensitivity and specificity, showing that the model is equally adept at identifying both classes.
-- **Mcnemar's Test (P-value = 0.07181)**: Suggests no significant bias between FP and FN rates, indicating a balanced performance across both types of errors.
+# Predict on the training data to get the probabilities
+rf_prob_train <- predict(rf_model, newdata = train_data, type = "prob")[, "1"]
 
-### Implications:
-The Random Forest model demonstrates strong performance metrics, indicating it is highly effective at classifying players as defenders or not based on the given features. The high sensitivity and specificity suggest that the model is balanced and robust, making it a reliable tool for predictions in this context. The feature importance scores help in understanding which attributes are most critical in making these predictions, guiding future data collection and feature engineering efforts to enhance model performance further.
+# Convert probabilities to binary class predictions using a 0.5 threshold
+rf_predictions_train <- ifelse(rf_prob_train > 0.5, "1", "0")
 
-```{r}
-# library(randomForest)
-# library(xgboost)
-# library(caret)
-# 
-# # Assuming 'train_data' is already prepared and contains the target 'IsDefender'
-# # and that 'train_data' and 'test_data' are already split.
-# 
-# # Fit Logistic Regression
-# logit_model <- glm(IsDefender ~ ., data = train_data, family = "binomial")
-# 
-# # Fit Random Forest
-# rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, ntree = 500)
-# 
-# # # Fit GBM
-# # control <- trainControl(method = "cv", number = 10)
-# # gbm_model <- train(IsDefender ~ ., data = train_data, method = "gbm", trControl = control, verbose = FALSE)
-# 
-# # Extract feature importance
-# logit_importance <- summary(logit_model)$coefficients
-# rf_importance <- importance(rf_model)
-# # gbm_importance <- varImp(gbm_model)$importance
-# 
-# # Print importances
-# print("Logistic Regression Coefficients:")
-# print(logit_importance)
-# 
-# print("Random Forest Feature Importance:")
-# print(rf_importance)
-# # 
-# # print("GBM Feature Importance:")
-# # print(gbm_importance)
-# 
+# Ensure that train_data$IsDefender is a factor with levels as expected by the model
+train_data$IsDefender <- factor(train_data$IsDefender, levels = levels(rf_model$y))
+
+# Ensure that rf_predictions_train is a factor with the same levels as train_data$IsDefender
+rf_predictions_train <- factor(rf_predictions_train, levels = levels(train_data$IsDefender))
+
+# Generate the confusion matrix for the training data
+conf_mat_train <- confusionMatrix(rf_predictions_train, train_data$IsDefender)
+
+# Print the confusion matrix and related statistics for the training data
+print(conf_mat_train)
+```
+To compare the model's performance on the test data with its performance on the training data, we examine the confusion matrix statistics for both.
+
+**On the Test Data:**
+- Accuracy: 89.64%, indicating the proportion of total correct predictions.
+- Kappa: 0.782, which measures the agreement between predicted and actual classifications, corrected for chance agreement.
+- Sensitivity: 92.10%, indicating the model's ability to correctly identify the positive class.
+- Specificity: 85.84%, indicating the model's ability to correctly identify the negative class.
+- The Positive Predictive Value (PPV) and Negative Predictive Value (NPV) are above 87%, suggesting good reliability in the predictions.
+- The Balanced Accuracy, which is the average of sensitivity and specificity, is at 88.97%, reflecting a good balance between true positive rate and true negative rate.
+
+**On the Training Data:**
+- Accuracy: Almost perfect at 99.99%, indicating the model predicts nearly all training cases correctly.
+- Kappa: 0.9998, showing almost perfect agreement.
+- Sensitivity and Specificity are virtually 100%, which could indicate the model is overfitted to the training data.
+- PPV and NPV are 99.99% and 100%, respectively.
+- Balanced Accuracy is also nearly perfect at 99.99%.
+
+**Conclusions:**
+- The Random Forest model performs exceptionally well on the training data, possibly too well, indicating that it may have overfitted to the training set. This is not uncommon with Random Forest models, especially when the default settings allow trees to grow without much constraint.
+- The model's performance on the test data, while very good, is not as high as on the training data, which is expected due to the model being exposed to new, unseen data.
+- Despite the drop in performance metrics from training to testing, the results on the test data are still strong, indicating that the model has good generalization capabilities.
+- The relatively high values for Kappa, Sensitivity, Specificity, PPV, NPV, and Balanced Accuracy on the test data suggest that the model is robust and reliable in making predictions on new data.
+
+In practice, if a model shows such high accuracy on the training data but lower on the test data, one might investigate further to fine-tune the model to avoid overfitting and improve generalization on unseen data. This can be done by tuning hyperparameters, pruning the trees, or incorporating more training data.
+
+The output you provided includes the feature importance scores from a Random Forest model and the performance metrics from a confusion matrix based on predictions made on the test data. Here’s a detailed explanation of each part of this output:
+
+
+```{r Naive Bayes }
+naive_model <- naiveBayes(IsDefender ~ ., data = train_data)
+# Calculating probabilities for Naive Bayes Model
+naive_probs <- predict(naive_model, newdata = test_data, type = "raw")
+naive_predictions_probs <- naive_probs[,2] # Assuming class '1' probabilities are in the second column
+
+# Predict class labels for Naive Bayes Model
+naive_predictions <- predict(naive_model, newdata = test_data)
+# Now you have naive_predictions for the confusionMatrix
+naive_confMatrix <- confusionMatrix(naive_predictions, test_data$IsDefender)
+print(naive_confMatrix)
 
 ```
 
-<!-- ```{r Naive Bayes Classifier} -->
-<!-- # Naive Bayes Model -->
-<!-- naive_model <- naiveBayes(IsDefender ~ ., data = train_data) -->
-<!-- # Calculating probabilities for Naive Bayes Model -->
-<!-- naive_probs <- predict(naive_model, newdata = test_data, type = "raw") -->
-<!-- naive_predictions_probs <- naive_probs[,2] # Assuming class '1' probabilities are in the second column -->
+```{r}
+# Calculating probabilities for Naive Bayes Model on training data
+naive_train_probs <- predict(naive_model, newdata = train_data, type = "raw")
+naive_train_predictions_probs <- naive_train_probs[,2] # Assuming class '1' probabilities are in the second column
 
-<!-- # Predict class labels for Naive Bayes Model -->
-<!-- naive_predictions <- predict(naive_model, newdata = test_data) -->
-<!-- # Now you have naive_predictions for the confusionMatrix -->
-<!-- naive_confMatrix <- confusionMatrix(naive_predictions, test_data$IsDefender) -->
-<!-- print(naive_confMatrix) -->
-<!-- ``` -->
+# Predict class labels for Naive Bayes Model on training data
+naive_train_predictions <- predict(naive_model, newdata = train_data)
+# Confusion Matrix for training data predictions
+naive_train_confMatrix <- confusionMatrix(naive_train_predictions, train_data$IsDefender)
+print(naive_train_confMatrix)
+```
 
-<!-- ```{r} -->
-<!-- # ROC and AUC for Logistic Regression -->
-<!-- logit_roc <- roc(test_data$IsDefender ~ logit_predictions, data = test_data) -->
-<!-- logit_auc <- auc(logit_roc) -->
 
-<!-- # ROC and AUC for Naive Bayes - using the corrected probabilities -->
-<!-- naive_roc <- roc(test_data$IsDefender ~ naive_predictions_probs, data = test_data) -->
-<!-- naive_auc <- auc(naive_roc) -->
+```{r}
+# ROC and AUC for Logistic Regression
+logit_roc <- roc(test_data$IsDefender ~ logit_predictions, data = test_data)
+logit_auc <- auc(logit_roc)
 
-<!-- # ROC and AUC for kNN -->
-<!-- knn_roc <- roc(response = test_data$IsDefender, predictor = knn_prob) -->
-<!-- knn_auc <- auc(knn_roc) -->
+# ROC and AUC for Naive Bayes - using the corrected probabilities
+naive_roc <- roc(test_data$IsDefender ~ naive_predictions_probs, data = test_data)
+naive_auc <- auc(naive_roc)
 
-<!-- # Plotting ROC Curves for all models -->
-<!-- plot(logit_roc, col = "blue", main = "ROC Curves for Classification Models") -->
-<!-- lines(naive_roc, col = "red") -->
-<!-- lines(knn_roc, col = "green") -->
-<!-- legend("bottomright",  -->
-<!--        legend = c(sprintf("Logistic Regression (AUC = %.2f)", logit_auc), -->
-<!--                   sprintf("Naive Bayes (AUC = %.2f)", naive_auc), -->
-<!--                   sprintf("kNN (AUC = %.2f)", knn_auc)), -->
-<!--        col = c("blue", "red", "green"), lwd = 2) -->
+# ROC and AUC for kNN
+knn_roc <- roc(response = test_data$IsDefender, predictor = knn_prob)
+knn_auc <- auc(knn_roc)
 
-<!-- ``` -->
+# ROC and AUC for Random Forest
+rf_roc <- roc(response = test_data$IsDefender, predictor = rf_prob)
+rf_auc <- auc(rf_roc)
 
-<!-- ```{r} -->
-<!-- # Compile AUC values into a summary table for all models -->
-<!-- auc_summary_all <- tibble( -->
-<!--   Model = c("Logistic Regression", "Naive Bayes", "kNN"), -->
-<!--   AUC = c(logit_auc, naive_auc, knn_auc) -->
-<!-- ) -->
+# Plotting ROC Curves for all models
+plot(logit_roc, col = "blue", main = "ROC Curves for Classification Models")
+lines(naive_roc, col = "red")
+lines(knn_roc, col = "green")
+lines(rf_roc, col = "purple")
+legend("bottomright",
+       legend = c(sprintf("Logistic Regression (AUC = %.2f)", logit_auc),
+                  sprintf("Naive Bayes (AUC = %.2f)", naive_auc),
+                  sprintf("kNN (AUC = %.2f)", knn_auc),
+                  sprintf("Random Forest (AUC = %.2f)", rf_auc)),
+       col = c("blue", "red", "green", "purple"), lwd = 2)
 
-<!-- # Display the AUC summary table for all models -->
-<!-- knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Models") -->
+```
 
-<!-- ``` -->
+```{r}
+# Compile AUC values into a summary table for all models
+auc_summary_all <- tibble(
+  Model = c("Logistic Regression", "Naive Bayes", "kNN"),
+  AUC = c(logit_auc, naive_auc, knn_auc)
+)
+
+# Display the AUC summary table for all models
+knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Models")
+
+```
 
 ## Model Evaluation
 
 ### Logistic Regression Evaluation
 
-The Logistic Regression model achieved an accuracy of 89.52%. This model has demonstrated good predictive power, with a high Kappa statistic of 0.7854 indicating substantial agreement beyond chance. The model has a high sensitivity (90.30%) and specificity (88.45%), reflecting a balanced ability to identify both classes correctly.
 
 ### k-Nearest Neighbors (kNN) Evaluation
 
-The kNN model, using a threshold of 0.5 to convert probabilities to class predictions, yielded an accuracy of 90.26%. This represents a slight improvement over the Logistic Regression model. The Kappa statistic of 0.799 suggests strong agreement. Sensitivity is higher at 92.83%, indicating that kNN is better at identifying defenders compared to the Logistic Regression model. The model also maintains good specificity at 86.69%.
-
 ### Naive Bayes Evaluation
-
-The Naive Bayes model, while slightly less accurate at 84.45%, still performs reasonably well. It has a lower Kappa statistic of 0.6776, indicating moderate agreement. The sensitivity and specificity are 88.99% and 78.15%, respectively, suggesting that while it's good at identifying defenders, it has a higher rate of false positives compared to the other models.
 
 ### ROC Curve Comparison
 
-The ROC curves for the three models illustrate their performance in classifying defenders. All three models show good performance with AUC values close to 1. The Logistic Regression model leads slightly with an AUC of 0.96, followed closely by kNN with an AUC of 0.95, and Naive Bayes with an AUC of 0.94.
-
 ## Conclusion
-
-Based on the evaluation metrics, the k-Nearest Neighbors (kNN) model has the highest accuracy and a balanced accuracy rate, making it slightly superior in this specific case. However, Logistic Regression also shows robust performance and may be preferred for its interpretability. Naive Bayes, while not performing as strongly, is computationally efficient and could be favored for its speed in larger datasets or real-time applications.
