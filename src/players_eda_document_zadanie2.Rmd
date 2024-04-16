@@ -404,6 +404,18 @@ test_data$IsDefender <- factor(test_data$IsDefender, levels = c(0, 1))
 # Create confusion matrix
 logit_confMatrix <- confusionMatrix(logit_predicted_classes, test_data$IsDefender)
 print(logit_confMatrix)
+
+# Extract metrics from the confusion matrix
+logit_accuracy <- logit_confMatrix$overall['Accuracy']
+logit_precision <- logit_confMatrix$byClass['Precision']
+logit_recall <- logit_confMatrix$byClass['Sensitivity']
+logit_F1 <- 2 * (logit_precision * logit_recall) / (logit_precision + logit_recall)
+
+# Print the metrics
+print(paste("Accuracy:", logit_accuracy))
+print(paste("Precision:", logit_precision))
+print(paste("Recall (Sensitivity):", logit_recall))
+print(paste("F1 Score:", logit_F1))
 ```
 
 The confusion matrix and associated statistics from the logistic regression model output tell us how well the model performed on the test dataset. Let’s interpret the results:
@@ -575,37 +587,37 @@ Overall, the results suggest that your model is robust and performs well under g
 
 ```{r knn tuning}
 
-# Prepare your data if not already done
-# train_data, test_data
-
-# Set up cross-validation - sets up how the training process should handle cross-validation.
-train_control <- trainControl(
-  method = "cv",
-  number = 10,  # using 10-fold cross-validation
-  savePredictions = "final"
-)
-
-# Define the tuning grid
-k_values <- data.frame(k = seq(1, 50, by = 1))  # testing k from 1 to 30
-
-# Train the model
-set.seed(123)  # for reproducibility
-
-# This function does the heavy lifting by training a k-NN model for each k value in the defined grid and evaluating its performance using the specified cross-validation strategy.
-knn_results <- train(
-  x = train_data[, predictors, drop = FALSE],
-  y = train_data$IsDefender,
-  method = "knn",
-  # This parameter allows you to pass the range of k values you want to test.
-  tuneGrid = k_values,
-  trControl = train_control,
-  # "scale": This ensures that the feature scaling is performed, which is crucial for k-NN models because they rely on distance calculations.
-  preProcess = "scale"
-)
-
-# Print the best model's results
-print(knn_results)
-plot(knn_results)
+# # Prepare your data if not already done
+# # train_data, test_data
+# 
+# # Set up cross-validation - sets up how the training process should handle cross-validation.
+# train_control <- trainControl(
+#   method = "cv",
+#   number = 10,  # using 10-fold cross-validation
+#   savePredictions = "final"
+# )
+# 
+# # Define the tuning grid
+# k_values <- data.frame(k = seq(1, 50, by = 1))  # testing k from 1 to 30
+# 
+# # Train the model
+# set.seed(123)  # for reproducibility
+# 
+# # This function does the heavy lifting by training a k-NN model for each k value in the defined grid and evaluating its performance using the specified cross-validation strategy.
+# knn_results <- train(
+#   x = train_data[, predictors, drop = FALSE],
+#   y = train_data$IsDefender,
+#   method = "knn",
+#   # This parameter allows you to pass the range of k values you want to test.
+#   tuneGrid = k_values,
+#   trControl = train_control,
+#   # "scale": This ensures that the feature scaling is performed, which is crucial for k-NN models because they rely on distance calculations.
+#   preProcess = "scale"
+# )
+# 
+# # Print the best model's results
+# print(knn_results)
+# plot(knn_results)
 ```
 
 ```{r knn prob}
@@ -632,6 +644,18 @@ knn_confMatrix <- confusionMatrix(knn_class_predictions, test_data$IsDefender)
 
 # Print the confusion matrix
 print(knn_confMatrix)
+
+# Extract metrics from the confusion matrix
+knn_accuracy <- knn_confMatrix$overall['Accuracy']
+knn_precision <- knn_confMatrix$byClass['Precision']
+knn_recall <- knn_confMatrix$byClass['Sensitivity']
+knn_F1 <- 2 * (knn_precision * knn_recall) / (knn_precision + knn_recall)
+
+# Print the metrics
+print(paste("k-NN Accuracy:", knn_accuracy))
+print(paste("k-NN Precision:", knn_precision))
+print(paste("k-NN Recall (Sensitivity):", knn_recall))
+print(paste("k-NN F1 Score:", knn_F1))
 
 ```
 
@@ -762,6 +786,17 @@ conf_mat <- confusionMatrix(rf_predictions, test_data$IsDefender)
 # Print the confusion matrix and related statistics
 print(conf_mat)
 
+# Extract metrics from the confusion matrix
+rf_accuracy <- conf_mat$overall['Accuracy']
+rf_precision <- conf_mat$byClass['Precision']
+rf_recall <- conf_mat$byClass['Sensitivity']
+rf_F1 <- 2 * (rf_precision * rf_recall) / (rf_precision + rf_recall)
+
+# Print the metrics
+print(paste("Random Forest Accuracy:", rf_accuracy))
+print(paste("Random Forest Precision:", rf_precision))
+print(paste("Random Forest Recall (Sensitivity):", rf_recall))
+print(paste("Random Forest F1 Score:", rf_F1))
 ```
 
 The output you provided includes the feature importance scores from a Random Forest model and the performance metrics from a confusion matrix based on predictions made on the test data. Here’s a detailed explanation of each part of this output:
@@ -837,6 +872,18 @@ naive_predictions <- predict(naive_model, newdata = test_data)
 naive_confMatrix <- confusionMatrix(naive_predictions, test_data$IsDefender)
 print(naive_confMatrix)
 
+# Extract metrics from the confusion matrix
+naive_accuracy <- naive_confMatrix$overall['Accuracy']
+naive_precision <- naive_confMatrix$byClass['Precision']
+naive_recall <- naive_confMatrix$byClass['Sensitivity']
+naive_F1 <- 2 * (naive_precision * naive_recall) / (naive_precision + naive_recall)
+
+# Print the metrics
+print(paste("Naive Bayes Accuracy:", naive_accuracy))
+print(paste("Naive Bayes Precision:", naive_precision))
+print(paste("Naive Bayes Recall (Sensitivity):", naive_recall))
+print(paste("Naive Bayes F1 Score:", naive_F1))
+
 ```
 
 ```{r}
@@ -883,6 +930,7 @@ legend("bottomright",
 
 ```
 
+
 ```{r}
 # Compile AUC values into a summary table for all models
 auc_summary_all <- tibble(
@@ -895,6 +943,32 @@ knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Mode
 
 ```
 
+
+
+```{r}
+
+# Create a summary table
+model_performance <- data.frame(
+  Model = c("Logistic Regression", "Naive Bayes", "k-NN", "Random Forest"),
+  Accuracy = c(logit_accuracy, naive_accuracy, knn_accuracy, rf_accuracy),
+  Precision = c(logit_precision, naive_precision, knn_precision, rf_precision),
+  Recall = c(logit_recall, naive_recall, knn_recall, rf_recall),
+  F1_Score = c(logit_F1, naive_F1, knn_F1, rf_F1),
+  AUC = c(logit_auc, naive_auc, knn_auc, rf_auc)
+)
+
+# Print the summary table
+print(model_performance)
+
+# Plot ROC curves for all models
+plot.roc(test_data$IsDefender, logit_predictions, col = "blue")
+lines.roc(test_data$IsDefender, naive_predictions_probs, col = "red")
+lines.roc(test_data$IsDefender, knn_prob, col = "green")
+lines.roc(test_data$IsDefender, rf_prob, col = "purple")
+legend("bottomright", legend = c("Logistic", "Naive Bayes", "k-NN", "Random Forest"),
+       col = c("blue", "red", "green", "purple"), lwd = 2)
+
+```
 ## Model Evaluation
 
 ### Logistic Regression Evaluation
