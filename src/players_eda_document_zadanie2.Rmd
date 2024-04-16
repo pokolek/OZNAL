@@ -87,29 +87,6 @@ print(logit_confMatrix)
 
 ```{r knn_model}
 # # Train k-Nearest Neighbors model
-# knn_model <- knn(train = train_data[, predictors], 
-#                  test = test_data[, predictors], 
-#                  cl = train_data$IsDefender, 
-#                  k = 5)  # Set the number of neighbors to consider
-# 
-# # Make sure the 'train_data' and 'test_data' contain only the predictors and the target variable
-# # This assumes 'predictors' is a character vector of your feature names and 'IsDefender' is your target variable
-# 
-# # First, ensure that your data only contains the necessary columns
-# train_data_knn <- train_data[, c(predictors, "IsDefender")]
-# test_data_knn <- test_data[, c(predictors, "IsDefender")]
-# 
-# # Train k-Nearest Neighbors model with class probabilities using caret::knn3
-# knn_fit <- knn3(x = train_data_knn[, predictors, drop = FALSE], y = train_data_knn$IsDefender, k = 5, prob = TRUE)
-# 
-# # Predict probabilities on the test set
-# knn_prob <- predict(knn_fit, newdata = test_data_knn[, predictors, drop = FALSE], type = "prob")[,2]
-# # Make predictions on the test data
-# knn_predictions <- factor(knn_model, levels = c(0, 1))
-# 
-# # Evaluate performance
-# knn_confMatrix <- confusionMatrix(knn_predictions, test_data$IsDefender)
-# print(knn_confMatrix)
 # Ensure target variable is a factor
 train_data$IsDefender <- as.factor(train_data$IsDefender)
 
@@ -184,8 +161,6 @@ knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Mode
 ```
 
 ## Model Evaluation
-
-In this section, we evaluate the performance of three different classification models: Logistic Regression, k-Nearest Neighbors (kNN), and Naive Bayes. We will compare their performance using both confusion matrices and ROC curves.
 
 ### Logistic Regression Evaluation
 
