@@ -22,8 +22,8 @@ library(car)
 ## Load and Inspect the Dataset
 
 ```{r load-inspect}
-#players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
-players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
+players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
+#players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
 glimpse(players) # Provides a brief overview of the dataset
 summary(players) # Summarizes the data giving quick insights
 ```
@@ -37,22 +37,232 @@ players <- players %>%
   filter(!str_detect(player_positions, "GK")) 
 ```
 
-Identify and handle missing values, outliers, and possibly convert data types as needed.
+Visualize relationships between variables 
+```{r}
+# Selecting specific columns for the pair plot
+selected_columns <- players[, c("value_eur", "potential", "overall", "age", "wage_eur", "height_cm", "weight_kg", "league_level", "club_contract_valid_until", "nation_team_id", "release_clause_eur", "skill_moves", "pace", "shooting", "passing", "dribbling", "defending", "physic")]
 
+# Removing rows with NA values to ensure the plot works correctly
+selected_columns_clean <- na.omit(selected_columns)
+
+# Plot value_eur vs potential
+ggplot(selected_columns_clean, aes(x = potential, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. potential", x = "Potential", y = "Market Value (EUR)")
+
+# Plot value_eur vs overall
+ggplot(selected_columns_clean, aes(x = overall, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. overall", x = "Overall Rating", y = "Market Value (EUR)")
+
+# Plot value_eur vs age
+ggplot(selected_columns_clean, aes(x = age, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. age", x = "Age", y = "Market Value (EUR)")
+
+# Plot value_eur vs wage_eur
+ggplot(selected_columns_clean, aes(x = wage_eur, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. wage_eur", x = "wage_eur", y = "Market Value (EUR)")
+
+# Plot value_eur vs height_cm
+ggplot(selected_columns_clean, aes(x = height_cm, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. height_cm", x = "height_cm", y = "Market Value (EUR)")
+
+# Plot value_eur vs weight_kg
+ggplot(selected_columns_clean, aes(x = weight_kg, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. weight_kg", x = "weight_kg", y = "Market Value (EUR)")
+
+# Plot value_eur vs league_level
+ggplot(selected_columns_clean, aes(x = league_level, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. league_level", x = "league_level", y = "Market Value (EUR)")
+
+# Plot value_eur vs club_contract_valid_until
+ggplot(selected_columns_clean, aes(x = club_contract_valid_until, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. club_contract_valid_until", x = "club_contract_valid_until", y = "Market Value (EUR)")
+
+# Plot value_eur vs nation_team_id
+ggplot(selected_columns_clean, aes(x = nation_team_id, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. nation_team_id", x = "nation_team_id", y = "Market Value (EUR)")
+
+# Plot value_eur vs release_clause_eur
+ggplot(selected_columns_clean, aes(x = release_clause_eur, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. release_clause_eur", x = "release_clause_eur", y = "Market Value (EUR)")
+
+# Plot value_eur vs skill_moves
+ggplot(selected_columns_clean, aes(x = skill_moves, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. skill_moves", x = "skill_moves", y = "Market Value (EUR)")
+
+# Plot value_eur vs pace
+ggplot(selected_columns_clean, aes(x = pace, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. pace", x = "pace", y = "Market Value (EUR)")
+
+# Plot value_eur vs shooting
+ggplot(selected_columns_clean, aes(x = shooting, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. shooting", x = "shooting", y = "Market Value (EUR)")
+
+# Plot value_eur vs passing
+ggplot(selected_columns_clean, aes(x = passing, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. passing", x = "passing", y = "Market Value (EUR)")
+
+# Plot value_eur vs dribbling
+ggplot(selected_columns_clean, aes(x = dribbling, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. dribbling", x = "dribbling", y = "Market Value (EUR)")
+
+# Plot value_eur vs defending
+ggplot(selected_columns_clean, aes(x = defending, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. defending", x = "defending", y = "Market Value (EUR)")
+
+# Plot value_eur vs physic
+ggplot(selected_columns_clean, aes(x = physic, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. physic", x = "physic", y = "Market Value (EUR)")
+```
+
+```{r Histograms for Skill Attributes by Position}
+players_simplified <- players %>%
+  mutate(primary_position = str_split(player_positions, ",", simplify = TRUE)[,1])
+
+# Histograms for Skill Attributes by Primary Position
+players_simplified %>%
+  gather(key="skill", value="value", pace, shooting, passing, dribbling, defending, physic, weight_kg, height_cm) %>%
+  mutate(skill = factor(skill)) %>%
+  ggplot(aes(x=value, fill=primary_position)) + 
+  geom_histogram(bins=20, alpha=0.5, position="identity") + 
+  facet_wrap(~skill, scales="free_x") +
+  theme_minimal() +
+  theme(legend.position="bottom") +
+  labs(title="Distribution of Skill Attributes by Primary Player Positions", x="Attribute Value", y="Frequency")
+```
+
+Count sum of missing values
 ```{r data-cleaning}
-players <- players %>% 
-  filter(!is.na(overall))
+count_na_in_column <- function(data, column_name) {
+  na_count <- table(is.na(data[[column_name]]))
+  print(na_count)
+}
 
-players <- players %>% 
-  filter(!is.na(potential))
+count_na_in_column(players, 'overall')
+count_na_in_column(players, 'potential')
+count_na_in_column(players, 'wage_eur')
+count_na_in_column(players, 'value_eur')
 
+count_na_in_column(players, 'player_positions')
+count_na_in_column(players, 'pace')
+count_na_in_column(players, 'shooting')
+count_na_in_column(players, 'passing')
+count_na_in_column(players, 'dribbling')
+count_na_in_column(players, 'defending')
+count_na_in_column(players, 'physic')
+count_na_in_column(players, 'height_cm')
+count_na_in_column(players, 'weight_kg')
+```
+
+Removing rows with missing values
+```{r data-removing}
 players <- players %>% 
   filter(!is.na(wage_eur))
 
 players <- players %>% 
   filter(!is.na(value_eur))
+```
 
-#Removing rows with missing values
+Identifying outliers
+```{r identifying-outliers}
+#Boxplots to see if there are any outliers
+boxplot(players$overall, players$potential, 
+        names = c("Overall", "Potential"),
+        main = "Overall and Potential")
+
+boxplot(players$wage_eur,
+        names = "Wage",
+        main = "Wage")
+
+boxplot(players$value_eur,
+        names = "Value",
+        main = "Value")
+
+boxplot(players$pace, players$shooting, players$dribbling, players$defending, players$physic,
+        names = c("pace", "shooting", "dribbling", "defending", "physic"),
+        main = "Physical atributes")
+
+boxplot(players$height_cm, players$weight_kg,
+        names = c("height_cm", "weight_kg"),
+        main = "Physical parameters")
+
+```
+Handling outliers
+```{r Outlier-handling}
+Q1 <- quantile(players$pace, 0.25)
+Q3 <- quantile(players$pace, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$pace >= (Q1 - 1.5 * IQR) & players$pace <= (Q3 + 1.5 * IQR))
+
+Q1 <- quantile(players$dribbling, 0.25)
+Q3 <- quantile(players$dribbling, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$dribbling >= (Q1 - 1.5 * IQR) & players$dribbling <= (Q3 + 1.5 * IQR))
+
+Q1 <- quantile(players$physic, 0.25)
+Q3 <- quantile(players$physic, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$physic >= (Q1 - 1.5 * IQR) & players$physic <= (Q3 + 1.5 * IQR))
+
+Q1 <- quantile(players$weight_kg, 0.25)
+Q3 <- quantile(players$weight_kg, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$weight_kg >= (Q1 - 1.5 * IQR) & players$weight_kg <= (Q3 + 1.5 * IQR))
+
+Q1 <- quantile(players$height_cm, 0.25)
+Q3 <- quantile(players$height_cm, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$height_cm >= (Q1 - 1.5 * IQR) & players$height_cm <= (Q3 + 1.5 * IQR))
+
+```
+
+```{r Histograms for Skill Attributes by Position after handling outliers}
+players_simplified <- players %>%
+  mutate(primary_position = str_split(player_positions, ",", simplify = TRUE)[,1])
+
+# Histograms for Skill Attributes by Primary Position
+players_simplified %>%
+  gather(key="skill", value="value", pace, shooting, passing, dribbling, defending, physic, weight_kg, height_cm) %>%
+  mutate(skill = factor(skill)) %>%
+  ggplot(aes(x=value, fill=primary_position)) + 
+  geom_histogram(bins=20, alpha=0.5, position="identity") + 
+  facet_wrap(~skill, scales="free_x") +
+  theme_minimal() +
+  theme(legend.position="bottom") +
+  labs(title="Distribution of Skill Attributes by Primary Player Positions", x="Attribute Value", y="Frequency")
 ```
 
 ```{r Prepare Data for Classification}
