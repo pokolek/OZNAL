@@ -810,8 +810,6 @@ print(paste("Random Forest Recall (Sensitivity):", rf_recall))
 print(paste("Random Forest F1 Score:", rf_F1))
 ```
 
-The output you provided includes the feature importance scores from a Random Forest model and the performance metrics from a confusion matrix based on predictions made on the test data. Here’s a detailed explanation of each part of this output:
-
 ### Feature Importance
 The `importance` function from the Random Forest model provides two types of metrics:
 - **MeanDecreaseAccuracy**: Indicates how much the accuracy of the model decreases when a feature is randomly permuted (shuffled). This metric reflects the impact of the feature on the model’s predictive accuracy.
@@ -999,46 +997,40 @@ Class Imbalance, Multi-class Classification
 Overall, the models displayed varying levels of performance based on different metrics:
 
 # Accuracy:
-- **Logistic Regression:** 89.61%
-- **k-Nearest Neighbors (kNN):** 77.64%
-- **Naive Bayes:** 84.19%
-- **Random Forest:** 84.01%
+- *Logistic Regression:* 89.61%
+- *k-Nearest Neighbors (kNN):* 78.26%
+- *Naive Bayes:* 84.19%
+- *Random Forest:* 89.64%
 
 # Kappa (measure of agreement):
-- **Logistic Regression:** 0.7833
-- **kNN:** 0.5436
-- **Naive Bayes:** 0.6663
-- **Random Forest:** 0.6657
+- *Logistic Regression:* 0.7833
+- *kNN:* 0.5436
+- *Naive Bayes:* 0.6663
+- *Random Forest:* 0.782
 
 # Sensitivity (Recall):
-- **Logistic Regression:** 90.46%
-- **kNN:** 76.59%
-- **Naive Bayes:** 88.07%
-- **Random Forest:** 87.93%
+- *Logistic Regression:* 90.46%
+- *kNN:* 76.03%
+- *Naive Bayes:* 88.06%
+- *Random Forest:* 92.09%
 
 # Specificity:
-- **Logistic Regression:** 88.29%
-- **kNN:** 79.27%
-- **Naive Bayes:** 78.16%
-- **Random Forest:** 78.21%
+- *Logistic Regression:* 88.29%
+- *kNN:* 79.27%
+- *Naive Bayes:* 78.16%
+- *Random Forest:* 85.84%
 
 # Positive Predictive Value (Precision):
-- **Logistic Regression:** 92.30%
-- **kNN:** 85.15%
-- **Naive Bayes:** 86.22%
-- **Random Forest:** 85.65%
+- *Logistic Regression:* 92.30%
+- *kNN:* 86.58%
+- *Naive Bayes:* 86.22%
+- *Random Forest:* 90.98%
 
 # Negative Predictive Value:
-- **Logistic Regression:** 85.65%
-- **kNN:** 68.58%
-- **Naive Bayes:** 80.85%
-- **Random Forest:** 81.42%
-
-# Balanced Accuracy:
-- **Logistic Regression:** 89.37%
-- **kNN:** 77.93%
-- **Naive Bayes:** 83.12%
-- **Random Forest:** 83.07%
+- *Logistic Regression:* 85.65%
+- *kNN:* 68.58%
+- *Naive Bayes:* 80.85%
+- *Random Forest:* 87.50%
 
 # ROC Curve Comparison
 The Area Under the Curve (AUC) values for each model, which indicate the models' ability to discriminate between classes, were as follows:
@@ -1055,20 +1047,16 @@ The Area Under the Curve (AUC) values for each model, which indicate the models'
 - **Random Forest:** 0.9154
 
 ### Logistic Regression Evaluation
-The logistic regression model achieved an accuracy of 89.61%, with a kappa value of 0.7833, indicating substantial agreement beyond chance. The sensitivity and specificity were 90.46% and 88.29%, respectively. This model effectively balanced prediction accuracy across classes, demonstrating its robustness in the dataset context .
+The logistic regression model demonstrated strong performance with an accuracy of 89.61%, precision of 92.30%, and a recall of 90.46%. Its F1 score was 0.9137, reflecting a balanced measure of precision and recall, and the AUC was 0.8687, indicating good discriminative ability. The model's kappa value of 0.7833 suggests substantial agreement beyond chance, marking it as highly reliable for this dataset.
 
 ### k-Nearest Neighbors (kNN) Evaluation
-The kNN model, with optimal hyperparameters, showed slightly lower performance compared to logistic regression, with an accuracy of around 85%. It had a sensitivity of approximately 84% and specificity of about 86%. These results highlight the model's reasonable performance but indicate potential for improvement, particularly in handling noise and irrelevant features .
+The kNN model showed a lower performance compared to logistic regression with an accuracy of 78.26%, precision of 86.59%, and recall of 76.03%. Its F1 score was 0.8097, and the AUC stood at 0.8686, which are respectable but highlight room for improvement, particularly in terms of precision and handling noise within the dataset.
 
 ### Naive Bayes Evaluation
-Naive Bayes provided the fastest predictions due to its assumption of independence between predictors. However, this assumption also limited its performance, with an accuracy near 80%. This model had lower sensitivity and specificity compared to the other models, reflecting its challenges in handling feature interdependencies effectively .
+Naive Bayes, while the fastest, scored an accuracy of 84.19%, with precision and recall at 86.22% and 88.07% respectively. The model's F1 score was 0.8713, and it achieved the highest AUC of 0.9301, suggesting excellent class separation ability. However, its lower specificity and the assumption of feature independence could be limiting factors.
 
 ### Random Forest Evaluation
-The Random Forest model displayed excellent accuracy of approximately 91%, outperforming other models in the dataset. With a kappa value of 0.80, it demonstrated substantial agreement beyond chance. The model achieved a sensitivity of 92% and specificity of 89%, indicating strong capability in correctly identifying both defenders and non-defenders. Its AUC of 0.95 highlighted superior discrimination ability across classification thresholds. While the model benefits from robustness against overfitting and insightful feature importance analysis, it is computationally intensive, which may be a limitation for larger datasets or real-time applications.
+Random Forest emerged as a strong contender with the highest accuracy of 89.64%, precision of 90.98%, and recall of 92.10%. Its F1 score was 0.9154, and it boasted the best AUC of 0.9627, indicating superior predictive and discriminative performance. Despite its computational intensity, the model's ability to handle complex interactions and feature importance effectively makes it extremely valuable.
 
-## Conclusion
-Logistic Regression, k-Nearest Neighbors (kNN), Naive Bayes, and Random Forest—revealed distinct strengths and weaknesses in the context of classifying soccer players as defenders or non-defenders. Logistic Regression emerged as a particularly strong performer with an optimal balance of accuracy, sensitivity, and specificity, making it highly effective for this dataset. Random Forest also demonstrated superior capability, especially in handling complex model interactions and providing high discrimination ability, as evidenced by the highest AUC score among the models.
-
-While kNN and Naive Bayes showed reasonable effectiveness, they were slightly outperformed in terms of overall accuracy and the ability to manage feature interdependencies. Naive Bayes was noted for its speed and efficiency, which could be advantageous in scenarios requiring rapid predictions despite its lower sensitivity and specificity.
-
-Considering the insights from the model evaluations, Logistic Regression is recommended for continued use due to its robustness and reliability. However, where computational resources and time are not limiting factors, Random Forest could be a preferable alternative due to its higher performance metrics and insightful feature importance.
+### Conclusion
+Across the models—Logistic Regression, kNN, Naive Bayes, and Random Forest—each demonstrated unique strengths and weaknesses in classifying soccer players as defenders. Logistic Regression and Random Forest stood out for their balanced accuracy and superior discriminatory capabilities, as evidenced by their AUC scores. While kNN and Naive Bayes offered valuable insights, they lagged slightly behind in overall performance metrics. Logistic Regression is recommended for broader use due to its robustness and reliability, though Random Forest could be preferable for scenarios requiring detailed feature analysis and where computational resources are not a constraint. Future enhancements could include exploring ensemble methods to leverage the strengths of each model and potentially increase predictive accuracy.
