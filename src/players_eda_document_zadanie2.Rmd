@@ -267,6 +267,8 @@ players_simplified %>%
   labs(title="Distribution of Skill Attributes by Primary Player Positions", x="Attribute Value", y="Frequency")
 ```
 
+# Data preparation for classification
+
 ```{r Prepare Data for Classification}
 # "B" stands for defenders like "CB", "LB", "RB"
 players$IsDefender <- ifelse(grepl("B", players$player_positions), 1, 0) 
@@ -287,6 +289,12 @@ test_data <- classification_data[-training_rows, ]
 
 ```
 
+# Feature selection
+
+## Log-Odds Linearity Plots
+
+These plots are checking the assumption of linearity between each predictor variable and the log-odds of the dependent variable, which is a key assumption in logistic regression. The assumption is not about linearity in the probability scale (which these plots are in), but rather in the log-odds scale. However, if the relationship looks reasonably straight on these plots, it often suggests that the relationship in the log-odds scale is also linear.
+
 ```{r feature selection}
 continuous_vars <- c("pace", "shooting", "passing", "dribbling", "defending", "physic", "height_cm", "weight_kg")
 for(var in continuous_vars) {
@@ -300,9 +308,6 @@ for(var in continuous_vars) {
 
 ```
 
-## Log-Odds Linearity Plots
-
-These plots are checking the assumption of linearity between each predictor variable and the log-odds of the dependent variable, which is a key assumption in logistic regression. The assumption is not about linearity in the probability scale (which these plots are in), but rather in the log-odds scale. However, if the relationship looks reasonably straight on these plots, it often suggests that the relationship in the log-odds scale is also linear.
 
 **Pace**: The plot indicates a fairly linear negative relationship between pace and the probability of being a defender. Faster players (higher pace) tend to be less likely defenders.
 
@@ -316,6 +321,7 @@ VIF values provide a measure of how much the variance of the estimated regressio
 - **VIF Value < 5**: Generally, VIF values less than 5 indicate that multicollinearity is not severe. In your output, pace, shooting, defending, physic, height_cm, and weight_kg all have VIF values below this threshold, suggesting that they do not have concerning levels of multicollinearity.
 - **VIF Value between 5 and 10**: This range indicates moderate multicollinearity. It may be a concern, but not necessarily one that will impair the model. passing and dribbling fall into this category, indicating that they have some linear association with other variables in the model but not enough to be overly problematic.
 - **VIF Value > 10**: Values greater than 10 are typically considered to be indicative of high multicollinearity, requiring further attention, such as removing the variable, combining it with another variable, or using dimensionality reduction techniques.
+
 ```{r VIF}
 # Calculate VIF
 vif_model <- vif(glm(IsDefender ~ ., data = train_data, family = "binomial"))
@@ -392,6 +398,7 @@ print(lasso_coefs)
 
 5. **Model Selection**: The Elastic Net model combines the feature selection properties of Lasso with the shrinkage of Ridge. The blend has moderated the coefficients, and because no coefficients are zero, it suggests that all the features included might have some relationship with the outcome.
 
+# Logistic regression model
 
 ```{r Logistic Regression}
 # Logistic Regression Model
@@ -447,6 +454,8 @@ However, we should consider whether the classes are balanced. If they are not, a
 
 Overall, the model seems to perform well, but the final assessment should consider the specific cost of false positives versus false negatives in the practical application where the model will be used.
 
+#Logistic Regression Model with reduced predictors
+
 ```{r}
 players$IsDefender <- ifelse(grepl("B", players$player_positions), 1, 0) 
 
@@ -464,8 +473,6 @@ training_rows <- createDataPartition(classification_data$IsDefender, p = 0.8, li
 reduced_train_data <- classification_data[training_rows, ]
 reduced_test_data <- classification_data[-training_rows, ]
 ```
-
-# Fit Logistic Regression Model with reduced predictors
 
 ```{r}
 # 
@@ -503,7 +510,7 @@ From these observations, we can conclude that while simplifying the model can ha
 
 The results demonstrate the importance of including a comprehensive set of features that capture the full spectrum of influences on the target variable. For a nuanced decision like determining a player's position, which can be influenced by a variety of factors, a more complex model with a richer feature set appears to provide better performance.
 
-# Fit Logistic Regression Model on the full training data
+# Logistic Regression Model on the full training data
 ```{r Logistic Regression Full Model on Train Data}
 
 full_logit_model_train <- glm(IsDefender ~ ., data = train_data, family = "binomial")
@@ -522,7 +529,7 @@ print(train_confMatrix)
 
 ```
 
-# Fit Logistic Regression Model on the full test data
+# Logistic Regression Model on the full test data
 
 ```{r Logistic Regression Full Model on Test Data}
 # Predict on the test data
@@ -538,7 +545,7 @@ test_confMatrix <- confusionMatrix(test_pred_classes, test_data$IsDefender)
 print(test_confMatrix)
 ```
 
-# Fit Logistic Regression Model on the subset
+# Logistic Regression Model on the subset
 
 ```{r subser}
 # Example: Analyze subset where 'defending' is above average
@@ -584,7 +591,7 @@ From the results provided, you have several sets of confusion matrices and corre
 
 Overall, the results suggest that your model is robust and performs well under general conditions but may require adjustments or more sophisticated methods to handle data subsets where player attributes significantly deviate from the norm. It also underscores the importance of examining model performance across different data segments to ensure consistent reliability.
 
-
+# kn
 ```{r knn tuning}
 
 # # Prepare your data if not already done

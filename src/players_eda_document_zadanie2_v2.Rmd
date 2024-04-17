@@ -22,8 +22,8 @@ library(car)
 ## Load and Inspect the Dataset
 
 ```{r load-inspect}
-players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
-#players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
+# players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
+players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
 glimpse(players) # Provides a brief overview of the dataset
 summary(players) # Summarizes the data giving quick insights
 ```
@@ -265,6 +265,8 @@ players_simplified %>%
   labs(title="Distribution of Skill Attributes by Primary Player Positions", x="Attribute Value", y="Frequency")
 ```
 
+# Prepare data for classification
+
 ```{r Prepare Data for Classification}
 # "B" stands for defenders like "CB", "LB", "RB"
 players$IsDefender <- ifelse(grepl("B", players$player_positions), 1, 0) 
@@ -285,6 +287,12 @@ test_data <- classification_data[-training_rows, ]
 
 ```
 
+# Feature selection
+
+## Log-Odds Linearity Plots
+
+These plots are checking the assumption of linearity between each predictor variable and the log-odds of the dependent variable, which is a key assumption in logistic regression. The assumption is not about linearity in the probability scale (which these plots are in), but rather in the log-odds scale. However, if the relationship looks reasonably straight on these plots, it often suggests that the relationship in the log-odds scale is also linear.
+
 ```{r feature selection}
 continuous_vars <- c("pace", "shooting", "passing", "dribbling", "defending", "physic", "height_cm", "weight_kg")
 for(var in continuous_vars) {
@@ -298,9 +306,6 @@ for(var in continuous_vars) {
 
 ```
 
-## Log-Odds Linearity Plots
-
-These plots are checking the assumption of linearity between each predictor variable and the log-odds of the dependent variable, which is a key assumption in logistic regression. The assumption is not about linearity in the probability scale (which these plots are in), but rather in the log-odds scale. However, if the relationship looks reasonably straight on these plots, it often suggests that the relationship in the log-odds scale is also linear.
 
 **Pace**: The plot indicates a fairly linear negative relationship between pace and the probability of being a defender. Faster players (higher pace) tend to be less likely defenders.
 
@@ -328,7 +333,6 @@ In summary, the plots show that some of the predictor variables have a non-linea
 The plots show how the mean squared error (MSE) from cross-validation varies with different values of the regularization parameter, log(λ). The MSE is lowest at the optimal λ value, which is indicated by the vertical dashed line. The leftmost vertical line in the plots represents lambda.min, the value of λ that minimizes the cross-validation error. For Lasso regularization, it's common to also consider lambda.1se (not shown), which is a more regularized model within one standard error of the minimum MSE.
 
 The number above the plot represents the number of predictors that are included in the model at each λ value. As λ increases (left to right on the x-axis), the number of predictors in the model decreases because larger λ values impose a greater penalty on the coefficients, leading to more coefficients being shrunk towards zero.
-
 
 
 ## Coefficients from Elastic Net Model
@@ -390,7 +394,7 @@ print(lasso_coefs)
 
 5. **Model Selection**: The Elastic Net model combines the feature selection properties of Lasso with the shrinkage of Ridge. The blend has moderated the coefficients, and because no coefficients are zero, it suggests that all the features included might have some relationship with the outcome.
 
-
+# Logistic regression
 ```{r Logistic Regression}
 # Logistic Regression Model
 logit_model <- glm(IsDefender ~ ., data = train_data, family = "binomial")
@@ -445,6 +449,8 @@ However, we should consider whether the classes are balanced. If they are not, a
 
 Overall, the model seems to perform well, but the final assessment should consider the specific cost of false positives versus false negatives in the practical application where the model will be used.
 
+# Logistic Regression Model with reduced predictors
+
 ```{r}
 players$IsDefender <- ifelse(grepl("B", players$player_positions), 1, 0) 
 
@@ -462,8 +468,6 @@ training_rows <- createDataPartition(classification_data$IsDefender, p = 0.8, li
 reduced_train_data <- classification_data[training_rows, ]
 reduced_test_data <- classification_data[-training_rows, ]
 ```
-
-# Fit Logistic Regression Model with reduced predictors
 
 ```{r}
 # 
@@ -501,7 +505,7 @@ From these observations, we can conclude that while simplifying the model can ha
 
 The results demonstrate the importance of including a comprehensive set of features that capture the full spectrum of influences on the target variable. For a nuanced decision like determining a player's position, which can be influenced by a variety of factors, a more complex model with a richer feature set appears to provide better performance.
 
-# Fit Logistic Regression Model on the full training data
+# Logistic Regression Model on the full training data
 ```{r Logistic Regression Full Model on Train Data}
 
 full_logit_model_train <- glm(IsDefender ~ ., data = train_data, family = "binomial")
@@ -519,8 +523,8 @@ train_confMatrix <- confusionMatrix(train_pred_classes, train_data$IsDefender)
 print(train_confMatrix)
 
 ```
-# Fit Logistic Regression Model on the full test data
 
+# Logistic Regression Model on the full test data
 
 ```{r Logistic Regression Full Model on Test Data}
 # Predict on the test data
@@ -536,8 +540,7 @@ test_confMatrix <- confusionMatrix(test_pred_classes, test_data$IsDefender)
 print(test_confMatrix)
 ```
 
-# Fit Logistic Regression Model on the subset
-
+# Logistic Regression Model on the subset
 
 ```{r subser}
 # Example: Analyze subset where 'defending' is above average
@@ -584,11 +587,10 @@ From the results provided, you have several sets of confusion matrices and corre
 
 Overall, the results suggest that model is robust and performs well under general conditions but may require adjustments or more sophisticated methods to handle data subsets where player attributes significantly deviate from the norm. It also underscores the importance of examining model performance across different data segments to ensure consistent reliability.
 
+# KNN model
 
-
+## Finding the right K 
 ```{r knn tuning}
-# Prepare your data if not already done
-# train_data, test_data
 # Set up cross-validation - sets up how the training process should handle cross-validation.
 train_control <- trainControl(
   method = "cv",
@@ -596,7 +598,7 @@ train_control <- trainControl(
   savePredictions = "final"
 )
 # Define the tuning grid
-k_values <- data.frame(k = seq(1, 50, by = 1))  # testing k from 1 to 30
+k_values <- data.frame(k = seq(1, 50, by = 1))  # testing k from 1 to 50
 # Train the model
 set.seed(123)  # for reproducibility
 # This function does the heavy lifting by training a k-NN model for each k value in the defined grid and evaluating its performance using the specified cross-validation strategy.
@@ -615,6 +617,17 @@ print(knn_results)
 plot(knn_results)
 ```
 
+*Around k=20, the accuracy begins to level off, indicating that adding more neighbors beyond this point doesn't substantially improve the model's performance. This plateau suggests that we've captured the essential patterns in the data by this stage, and further increases in k result primarily in computational redundancy rather than enhanced predictive power.
+
+We chose k=35, which is on this plateau. This choice is strategic for a few reasons:
+
+1. It avoids the risks associated with a too-low k, such as noise and outlier sensitivity, which could compromise the model's generalizability.
+2. It prevents the complexity and potential computational burden that a too-high k would introduce, which might be unnecessary given the lack of significant accuracy gains.
+3. It positions us in a 'safe zone' where the model is neither too simplistic to capture the nuances of the data nor too complex to be bogged down by noise.
+
+Lastly, the selection of k=35 also demonstrates stability in the model's performance. There's no indication of overfitting, as we might expect if the accuracy started to decline with larger values of k. This balance between bias and variance, or simplicity and complexity, suggests that k=35 is a reasonable choice for our model, striking a good balance between accuracy and computational efficiency.
+
+# KNN training on test data
 ```{r knn prob}
 
 # Train k-Nearest Neighbors model
@@ -625,13 +638,12 @@ train_data$IsDefender <- as.factor(train_data$IsDefender)
 knn_fit <- knn3(x = train_data[, predictors, drop = FALSE], y = train_data$IsDefender, k = 35, prob = TRUE)
 
 # Predict probabilities on the test set
-# Note: Ensure that test_data contains the same predictors as train_data
 knn_prob <- predict(knn_fit, newdata = test_data[, predictors, drop = FALSE], type = "prob")[,2]
 
 # Convert probabilities to class predictions using a 0.5 threshold
 knn_class_predictions <- ifelse(knn_prob > 0.5, "1", "0")
 
-# Ensure the predictions are factors with the same levels as the test data target variable
+# predictions are factors with the same levels as the test data target variable
 knn_class_predictions <- factor(knn_class_predictions, levels = levels(train_data$IsDefender))
 
 # Generate the confusion matrix
@@ -653,6 +665,7 @@ print(paste("k-NN Recall (Sensitivity):", knn_recall))
 print(paste("k-NN F1 Score:", knn_F1))
 ```
 
+# KNN training on train data
 ```{r knn prob train}
 # Predict probabilities on the training set itself
 knn_prob_train <- predict(knn_fit, newdata = train_data[, predictors, drop = FALSE], type = "prob")[,2]
@@ -708,19 +721,9 @@ To compare the performance of the k-Nearest Neighbors (k-NN) model on both the t
 
 Overall, the k-NN model shows good performance, but like most models, it performs slightly better on training data. Your analysis should consider whether the slight decrease in performance on test data is acceptable based on your specific use case requirements.
 
+# Random forest model
 
-When determining the optimal number of neighbors (k) for the k-Nearest Neighbors model, I considered how the accuracy of the model changes as k varies. The plot of model accuracy against k displays a pattern where the model's performance improves significantly with an initial increase in the number of neighbors, which is reflective of the model leveraging more data to make informed decisions.
-
-*Around k=20, the accuracy begins to level off, indicating that adding more neighbors beyond this point doesn't substantially improve the model's performance. This plateau suggests that we've captured the essential patterns in the data by this stage, and further increases in k result primarily in computational redundancy rather than enhanced predictive power.
-
-Given this observation, I chose k=35, which is on this plateau. This choice is strategic for a few reasons:
-
-1. It avoids the risks associated with a too-low k, such as noise and outlier sensitivity, which could compromise the model's generalizability.
-2. It prevents the complexity and potential computational burden that a too-high k would introduce, which might be unnecessary given the lack of significant accuracy gains.
-3. It positions us in a 'safe zone' where the model is neither too simplistic to capture the nuances of the data nor too complex to be bogged down by noise.
-
-Lastly, the selection of k=35 also demonstrates stability in the model's performance. There's no indication of overfitting, as we might expect if the accuracy started to decline with larger values of k. This balance between bias and variance, or simplicity and complexity, suggests that k=35 is a reasonable choice for our model, striking a good balance between accuracy and computational efficiency.
-
+## Choosing the right number of trees
 
 ```{r }
 # Train a Random Forest model with OOB error tracking
@@ -757,6 +760,7 @@ The plot demonstrates the Out-of-Bag (OOB) error rate for a Random Forest model 
 
 In conclusion, given the pattern observed in the OOB error rate plot, choosing 100 trees for the Random Forest model would likely be sufficient and computationally efficient while maintaining high predictive accuracy.
 
+# Random forest on test data
 
 ```{r rf test}
 # Fit the Random Forest model
@@ -806,6 +810,7 @@ The `importance` function from the Random Forest model provides two types of met
 - **Shooting** and **Pace** also show high importance, especially in the Gini index, suggesting these features significantly help in dividing the player data into distinct, homogeneous groups.
 - **Physic, Height_cm**, and **Weight_kg** have lower importance scores, indicating they have less impact on the model's predictions compared to skills-related features.
 
+# Random forest on train data
 
 ```{r rf train}
 
@@ -854,6 +859,7 @@ In practice, if a model shows such high accuracy on the training data but lower 
 
 The output you provided includes the feature importance scores from a Random Forest model and the performance metrics from a confusion matrix based on predictions made on the test data. Here’s a detailed explanation of each part of this output:
 
+# Naive Bayes on test data
 
 ```{r Naive Bayes }
 naive_model <- naiveBayes(IsDefender ~ ., data = train_data)
@@ -879,6 +885,8 @@ print(paste("Naive Bayes Recall (Sensitivity):", naive_recall))
 print(paste("Naive Bayes F1 Score:", naive_F1))
 ```
 
+# Naive Bayes on train data
+
 ```{r}
 # Calculating probabilities for Naive Bayes Model on training data
 naive_train_probs <- predict(naive_model, newdata = train_data, type = "raw")
@@ -891,6 +899,7 @@ naive_train_confMatrix <- confusionMatrix(naive_train_predictions, train_data$Is
 print(naive_train_confMatrix)
 ```
 
+# ROC and AUC
 
 ```{r}
 # ROC and AUC for Logistic Regression
@@ -923,17 +932,24 @@ legend("bottomright",
 
 ```
 
-```{r}
-# Compile AUC values into a summary table for all models
-auc_summary_all <- tibble(
-  Model = c("Logistic Regression", "Naive Bayes", "kNN"),
-  AUC = c(logit_auc, naive_auc, knn_auc)
-)
+From the ROC curves displayed, we can observe the following:
 
-# Display the AUC summary table for all models
-knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Models")
+1. **Logistic Regression (Blue Curve):** The AUC (Area Under the Curve) for the logistic regression model is 0.87. This indicates good predictive ability, but not the best among the models presented.
 
-```
+2. **Naive Bayes (Red Curve):** The AUC for the Naive Bayes model is 0.93, which is higher than that of the logistic regression, suggesting better overall performance in terms of distinguishing between the two classes.
+
+3. **kNN (Green Curve):** The k-Nearest Neighbors model has an AUC of 0.87, similar to logistic regression, which implies comparable performance between these two models.
+
+4. **Random Forest (Purple Curve):** The Random Forest model shows an AUC of 0.96, which is the highest among the models. This suggests that Random Forest is the most effective model at correctly classifying the positive class (presumably 'IsDefender') when compared to the other models.
+
+5. **General Observations:**
+   - The curve for the Random Forest is closest to the top left corner of the plot, indicating a higher true positive rate and a lower false positive rate across thresholds, which is desirable in ROC space.
+   - The Naive Bayes model also performs well, with its curve lying above the other two models (except Random Forest), showing its strong classification capability.
+   - All models perform significantly better than random guessing, which would be represented by a diagonal line from the bottom left to the top right corner (the line of no-discrimination).
+
+ROC curves are a graphical representation of the trade-off between true positive rates (sensitivity) and false positive rates (1-specificity) across different thresholds. A higher AUC value typically indicates better model performance, with 1.0 being perfect prediction and 0.5 indicating no predictive ability better than random chance.
+
+# Summary table
 
 ```{r}
 
@@ -947,20 +963,23 @@ model_performance <- data.frame(
   AUC = c(logit_auc, naive_auc, knn_auc, rf_auc)
 )
 
-# Print the summary table
-print(model_performance)
+# Print the summary table using knitr::kable for a nicely formatted output in R Markdown
+knitr::kable(model_performance, caption = "Summary of Model Performance Metrics", align = 'c')
+```
 
-# Plot ROC curves for all models
-plot.roc(test_data$IsDefender, logit_predictions, col = "blue")
-lines.roc(test_data$IsDefender, naive_predictions_probs, col = "red")
-lines.roc(test_data$IsDefender, knn_prob, col = "green")
-lines.roc(test_data$IsDefender, rf_prob, col = "purple")
-legend("bottomright", legend = c("Logistic", "Naive Bayes", "k-NN", "Random Forest"),
-       col = c("blue", "red", "green", "purple"), lwd = 2)
+```{r}
+# Compile AUC values into a summary table for all models
+auc_summary_all <- tibble(
+  Model = c("Logistic Regression", "Naive Bayes", "kNN", "Random Forest"),
+  AUC = c(logit_auc, naive_auc, knn_auc, rf_auc)
+)
+
+# Display the AUC summary table for all models
+knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Models")
 
 ```
 
-##Model Evaluation
+## Model Evaluation
 Overall, the models displayed varying levels of performance based on different metrics:
 
 # Accuracy:
