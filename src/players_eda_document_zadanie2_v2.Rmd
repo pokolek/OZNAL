@@ -1,0 +1,1035 @@
+
+---
+title: "Exploratory Data Analysis of Soccer Players Dataset"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(caret)
+library(corrplot)
+library(ggplot2)
+library(e1071)
+library(randomForest)
+library(class)
+library(pROC)
+library(boot)
+library(glmnet)
+library(car)
+```
+
+## Load and Inspect the Dataset
+
+```{r load-inspect}
+players <- read.csv("C:/Users/marti/OneDrive/Documents/OZNAL/OZNAL/data/players_22.csv")
+#players <- read.csv("C:/Users/olko/Desktop/OZNAL/data/players_22.csv")
+glimpse(players) # Provides a brief overview of the dataset
+summary(players) # Summarizes the data giving quick insights
+```
+
+## Data Cleaning
+
+Remove players, that play as a goalkeeper
+
+```{r GK}
+players <- players %>% 
+  filter(!str_detect(player_positions, "GK")) 
+```
+
+Visualize relationships between variables 
+```{r}
+# Selecting specific columns for the pair plot
+selected_columns <- players[, c("value_eur", "potential", "overall", "age", "wage_eur", "height_cm", "weight_kg", "league_level", "club_contract_valid_until", "nation_team_id", "release_clause_eur", "skill_moves", "pace", "shooting", "passing", "dribbling", "defending", "physic")]
+
+# Removing rows with NA values to ensure the plot works correctly
+selected_columns_clean <- na.omit(selected_columns)
+
+# Plot value_eur vs potential
+ggplot(selected_columns_clean, aes(x = potential, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. potential", x = "Potential", y = "Market Value (EUR)")
+
+# Plot value_eur vs overall
+ggplot(selected_columns_clean, aes(x = overall, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. overall", x = "Overall Rating", y = "Market Value (EUR)")
+
+# Plot value_eur vs age
+ggplot(selected_columns_clean, aes(x = age, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. age", x = "Age", y = "Market Value (EUR)")
+
+# Plot value_eur vs wage_eur
+ggplot(selected_columns_clean, aes(x = wage_eur, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. wage_eur", x = "wage_eur", y = "Market Value (EUR)")
+
+# Plot value_eur vs height_cm
+ggplot(selected_columns_clean, aes(x = height_cm, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. height_cm", x = "height_cm", y = "Market Value (EUR)")
+
+# Plot value_eur vs weight_kg
+ggplot(selected_columns_clean, aes(x = weight_kg, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. weight_kg", x = "weight_kg", y = "Market Value (EUR)")
+
+# Plot value_eur vs league_level
+ggplot(selected_columns_clean, aes(x = league_level, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. league_level", x = "league_level", y = "Market Value (EUR)")
+
+# Plot value_eur vs club_contract_valid_until
+ggplot(selected_columns_clean, aes(x = club_contract_valid_until, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. club_contract_valid_until", x = "club_contract_valid_until", y = "Market Value (EUR)")
+
+# Plot value_eur vs nation_team_id
+ggplot(selected_columns_clean, aes(x = nation_team_id, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. nation_team_id", x = "nation_team_id", y = "Market Value (EUR)")
+
+# Plot value_eur vs release_clause_eur
+ggplot(selected_columns_clean, aes(x = release_clause_eur, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. release_clause_eur", x = "release_clause_eur", y = "Market Value (EUR)")
+
+# Plot value_eur vs skill_moves
+ggplot(selected_columns_clean, aes(x = skill_moves, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. skill_moves", x = "skill_moves", y = "Market Value (EUR)")
+
+# Plot value_eur vs pace
+ggplot(selected_columns_clean, aes(x = pace, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. pace", x = "pace", y = "Market Value (EUR)")
+
+# Plot value_eur vs shooting
+ggplot(selected_columns_clean, aes(x = shooting, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. shooting", x = "shooting", y = "Market Value (EUR)")
+
+# Plot value_eur vs passing
+ggplot(selected_columns_clean, aes(x = passing, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. passing", x = "passing", y = "Market Value (EUR)")
+
+# Plot value_eur vs dribbling
+ggplot(selected_columns_clean, aes(x = dribbling, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. dribbling", x = "dribbling", y = "Market Value (EUR)")
+
+# Plot value_eur vs defending
+ggplot(selected_columns_clean, aes(x = defending, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. defending", x = "defending", y = "Market Value (EUR)")
+
+# Plot value_eur vs physic
+ggplot(selected_columns_clean, aes(x = physic, y = value_eur)) + 
+  geom_point() + 
+  theme_minimal() + 
+  labs(title = "value_eur vs. physic", x = "physic", y = "Market Value (EUR)")
+```
+
+```{r Histograms for Skill Attributes by Position}
+players_simplified <- players %>%
+  mutate(primary_position = str_split(player_positions, ",", simplify = TRUE)[,1])
+
+# Histograms for Skill Attributes by Primary Position
+players_simplified %>%
+  gather(key="skill", value="value", pace, shooting, passing, dribbling, defending, physic, weight_kg, height_cm) %>%
+  mutate(skill = factor(skill)) %>%
+  ggplot(aes(x=value, fill=primary_position)) + 
+  geom_histogram(bins=20, alpha=0.5, position="identity") + 
+  facet_wrap(~skill, scales="free_x") +
+  theme_minimal() +
+  theme(legend.position="bottom") +
+  labs(title="Distribution of Skill Attributes by Primary Player Positions", x="Attribute Value", y="Frequency")
+```
+
+Count sum of missing values
+```{r data-cleaning}
+count_na_in_column <- function(data, column_name) {
+  na_count <- table(is.na(data[[column_name]]))
+  print(na_count)
+}
+
+count_na_in_column(players, 'overall')
+count_na_in_column(players, 'potential')
+count_na_in_column(players, 'wage_eur')
+count_na_in_column(players, 'value_eur')
+
+count_na_in_column(players, 'player_positions')
+count_na_in_column(players, 'pace')
+count_na_in_column(players, 'shooting')
+count_na_in_column(players, 'passing')
+count_na_in_column(players, 'dribbling')
+count_na_in_column(players, 'defending')
+count_na_in_column(players, 'physic')
+count_na_in_column(players, 'height_cm')
+count_na_in_column(players, 'weight_kg')
+```
+
+Removing rows with missing values
+```{r data-removing}
+players <- players %>% 
+  filter(!is.na(wage_eur))
+
+players <- players %>% 
+  filter(!is.na(value_eur))
+```
+
+Identifying outliers
+```{r identifying-outliers}
+#Boxplots to see if there are any outliers
+boxplot(players$overall, players$potential, 
+        names = c("Overall", "Potential"),
+        main = "Overall and Potential")
+
+boxplot(players$wage_eur,
+        names = "Wage",
+        main = "Wage")
+
+boxplot(players$value_eur,
+        names = "Value",
+        main = "Value")
+
+boxplot(players$pace, players$shooting, players$dribbling, players$defending, players$physic,
+        names = c("pace", "shooting", "dribbling", "defending", "physic"),
+        main = "Physical atributes")
+
+boxplot(players$height_cm, players$weight_kg,
+        names = c("height_cm", "weight_kg"),
+        main = "Physical parameters")
+
+```
+Handling outliers
+```{r Outlier-handling}
+Q1 <- quantile(players$pace, 0.25)
+Q3 <- quantile(players$pace, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$pace >= (Q1 - 1.5 * IQR) & players$pace <= (Q3 + 1.5 * IQR))
+
+Q1 <- quantile(players$dribbling, 0.25)
+Q3 <- quantile(players$dribbling, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$dribbling >= (Q1 - 1.5 * IQR) & players$dribbling <= (Q3 + 1.5 * IQR))
+
+Q1 <- quantile(players$physic, 0.25)
+Q3 <- quantile(players$physic, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$physic >= (Q1 - 1.5 * IQR) & players$physic <= (Q3 + 1.5 * IQR))
+
+Q1 <- quantile(players$weight_kg, 0.25)
+Q3 <- quantile(players$weight_kg, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$weight_kg >= (Q1 - 1.5 * IQR) & players$weight_kg <= (Q3 + 1.5 * IQR))
+
+Q1 <- quantile(players$height_cm, 0.25)
+Q3 <- quantile(players$height_cm, 0.75)
+IQR <- Q3 - Q1
+players <- subset(players, players$height_cm >= (Q1 - 1.5 * IQR) & players$height_cm <= (Q3 + 1.5 * IQR))
+
+```
+
+```{r Histograms for Skill Attributes by Position after handling outliers}
+players_simplified <- players %>%
+  mutate(primary_position = str_split(player_positions, ",", simplify = TRUE)[,1])
+
+# Histograms for Skill Attributes by Primary Position
+players_simplified %>%
+  gather(key="skill", value="value", pace, shooting, passing, dribbling, defending, physic, weight_kg, height_cm) %>%
+  mutate(skill = factor(skill)) %>%
+  ggplot(aes(x=value, fill=primary_position)) + 
+  geom_histogram(bins=20, alpha=0.5, position="identity") + 
+  facet_wrap(~skill, scales="free_x") +
+  theme_minimal() +
+  theme(legend.position="bottom") +
+  labs(title="Distribution of Skill Attributes by Primary Player Positions", x="Attribute Value", y="Frequency")
+```
+
+```{r Prepare Data for Classification}
+# "B" stands for defenders like "CB", "LB", "RB"
+players$IsDefender <- ifelse(grepl("B", players$player_positions), 1, 0) 
+
+#
+predictors <- c("pace", "shooting", "passing", "dribbling", "defending", "physic", "height_cm", "weight_kg")
+
+# Prepare the dataset (ensure that you have no missing values in the predictors and the target variable)
+classification_data <- players %>% 
+  select(IsDefender, all_of(predictors)) %>% 
+  na.omit()
+
+# Create training and testing sets
+set.seed(123) # for reproducibility
+training_rows <- createDataPartition(classification_data$IsDefender, p = 0.8, list = FALSE)
+train_data <- classification_data[training_rows, ]
+test_data <- classification_data[-training_rows, ]
+
+```
+
+```{r feature selection}
+continuous_vars <- c("pace", "shooting", "passing", "dribbling", "defending", "physic", "height_cm", "weight_kg")
+for(var in continuous_vars) {
+  p <- ggplot(train_data, aes(x = .data[[var]], y = IsDefender)) +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+    ggtitle(paste("Log-Odds Linearity Check for", var)) +
+    xlab(var) +
+    ylab("Probability of Being a Defender")
+  print(p)
+}
+
+```
+
+## Log-Odds Linearity Plots
+
+These plots are checking the assumption of linearity between each predictor variable and the log-odds of the dependent variable, which is a key assumption in logistic regression. The assumption is not about linearity in the probability scale (which these plots are in), but rather in the log-odds scale. However, if the relationship looks reasonably straight on these plots, it often suggests that the relationship in the log-odds scale is also linear.
+
+**Pace**: The plot indicates a fairly linear negative relationship between pace and the probability of being a defender. Faster players (higher pace) tend to be less likely defenders.
+
+**Shooting**: The relationship curve starts flat at higher shooting values and then steepens as the shooting value decreases. This suggests players with lower shooting scores are much more likely to be defenders.
+
+**Passing, Dribbling, Defending, Physic, Height_cm, Weight_kg**: Each of these plots shows a non-linear relationship. For Defending and Physic, there's a steep increase in the probability of being a defender with higher scores, which intuitively makes sense. For Height and Weight, it also increases, suggesting taller and heavier players are more likely to be defenders. The non-linearity in these plots suggests that including these variables as linear terms might not fully capture the relationship between them and the log-odds of being a defender.
+
+## Variance Inflation Factor (VIF)
+VIF values provide a measure of how much the variance of the estimated regression coefficients is inflated due to multicollinearity among the predictor variables.
+
+- **VIF Value < 5**: Generally, VIF values less than 5 indicate that multicollinearity is not severe. In your output, pace, shooting, defending, physic, height_cm, and weight_kg all have VIF values below this threshold, suggesting that they do not have concerning levels of multicollinearity.
+- **VIF Value between 5 and 10**: This range indicates moderate multicollinearity. It may be a concern, but not necessarily one that will impair the model. passing and dribbling fall into this category, indicating that they have some linear association with other variables in the model but not enough to be overly problematic.
+- **VIF Value > 10**: Values greater than 10 are typically considered to be indicative of high multicollinearity, requiring further attention, such as removing the variable, combining it with another variable, or using dimensionality reduction techniques.
+```{r VIF}
+# Calculate VIF
+vif_model <- vif(glm(IsDefender ~ ., data = train_data, family = "binomial"))
+print(vif_model)
+```
+
+In summary, the plots show that some of the predictor variables have a non-linear relationship with the probability of being a defender. This might require transforming these variables or including them in a non-linear fashion in the logistic regression model. The VIF results mostly indicate acceptable levels of multicollinearity, except for passing and dribbling, which show moderate multicollinearity and might warrant closer inspection or remedial measures.
+
+
+## Cross-Validation Plots Interpretation
+
+The plots show how the mean squared error (MSE) from cross-validation varies with different values of the regularization parameter, log(λ). The MSE is lowest at the optimal λ value, which is indicated by the vertical dashed line. The leftmost vertical line in the plots represents lambda.min, the value of λ that minimizes the cross-validation error. For Lasso regularization, it's common to also consider lambda.1se (not shown), which is a more regularized model within one standard error of the minimum MSE.
+
+The number above the plot represents the number of predictors that are included in the model at each λ value. As λ increases (left to right on the x-axis), the number of predictors in the model decreases because larger λ values impose a greater penalty on the coefficients, leading to more coefficients being shrunk towards zero.
+
+
+
+## Coefficients from Elastic Net Model
+
+Here's how to interpret the coefficients from the Elastic Net regularization (alpha = 0.5):
+
+- **(Intercept)**: The baseline log odds of being a defender when all other variables are zero is negative, suggesting a low baseline probability of a player being a defender in the absence of other information.
+- **pace**: A positive coefficient suggests a positive relationship with the outcome; as pace increases, the log odds of being a defender slightly increase.
+- **shooting**: A negative coefficient implies that as shooting ability increases, the likelihood of being a defender decreases.
+- **passing**: Similarly, a negative coefficient for passing suggests that players with better passing skills are less likely to be defenders.
+- **dribbling**: A negative coefficient, although very close to zero, which may suggest a weak or negligible relationship with being a defender.
+defending: A positive coefficient, and it's the largest in magnitude, which indicates a strong positive association with being a defender.
+- **physic**: A small positive coefficient means that a better physical score is slightly associated with being a defender.
+- **height_cm**: The positive coefficient indicates that taller players are slightly more likely to be defenders.
+- **weight_kg**: A positive coefficient suggests heavier players are more likely to be defenders.
+
+```{r Ridge}
+
+# Prepare data
+x <- model.matrix(IsDefender ~ . - 1, data = train_data)
+y <- train_data$IsDefender
+
+#fit elastic net model
+cv_glmnet <- cv.glmnet(x, y, alpha = 0.5)  # alpha=1 for Lasso, alpha=0 for Ridge
+plot(cv_glmnet)
+
+# Get coefficients at the optimal lambda
+best_lambda <- cv_glmnet$lambda.min
+coef(cv_glmnet, s = best_lambda)
+```
+
+
+## Coefficients from Lasso Model
+
+The Lasso model (alpha = 1) coefficients are quite similar to those from the Elastic Net model. The biggest difference with Lasso is that it can set some coefficients exactly to zero, which isn't happening with the variables shown here.
+
+In both models, the defending attribute has the strongest positive association with being a defender, which is consistent with what you would expect in a soccer dataset: players with higher defending skills are more likely to be classified as defenders. Negative coefficients for shooting, passing, and dribbling suggest that players with higher abilities in these areas are less likely to be defenders, possibly because these skills are more critical for forwards and midfielders.
+
+
+```{r lasso}
+# Fit Lasso model
+cv_glmnet <- cv.glmnet(x, y, alpha = 1)  # Set alpha to 1 for Lasso
+plot(cv_glmnet)
+
+# Extract coefficients at the optimal lambda
+best_lambda <- cv_glmnet$lambda.min
+lasso_coefs <- coef(cv_glmnet, s = best_lambda)
+print(lasso_coefs)
+```
+
+
+1. **Defending Skills**: The `defending` attribute has the most substantial positive association with being a defender across both models. This finding is intuitive and confirms that this feature is likely the most important predictor for determining if a player is a defender.
+
+2. **Offensive Skills**: Attributes typically associated with offensive skills, such as `shooting`, `passing`, and `dribbling`, are negatively associated with the likelihood of being a defender, which also aligns with domain knowledge of soccer.
+
+3. **Physical Attributes**: `height_cm` and `weight_kg` have positive associations with being a defender, suggesting that larger physical size is a characteristic of defensive players in dataset.
+
+4. **Sparse Model**: The Lasso model did not set any coefficients to zero, which means it did not exclude any predictors from the model based on the provided output.
+
+5. **Model Selection**: The Elastic Net model combines the feature selection properties of Lasso with the shrinkage of Ridge. The blend has moderated the coefficients, and because no coefficients are zero, it suggests that all the features included might have some relationship with the outcome.
+
+
+```{r Logistic Regression}
+# Logistic Regression Model
+logit_model <- glm(IsDefender ~ ., data = train_data, family = "binomial")
+logit_predictions <- predict(logit_model, newdata = test_data, type = "response")
+logit_predicted_classes <- ifelse(logit_predictions > 0.5, 1, 0)
+# Convert both predicted classes and actual classes to factors with the same levels
+logit_predicted_classes <- factor(logit_predicted_classes, levels = c(0, 1))
+test_data$IsDefender <- factor(test_data$IsDefender, levels = c(0, 1))
+# Create confusion matrix
+logit_confMatrix <- confusionMatrix(logit_predicted_classes, test_data$IsDefender)
+print(logit_confMatrix)
+
+# Extract metrics from the confusion matrix
+logit_accuracy <- logit_confMatrix$overall['Accuracy']
+logit_precision <- logit_confMatrix$byClass['Precision']
+logit_recall <- logit_confMatrix$byClass['Sensitivity']
+logit_F1 <- 2 * (logit_precision * logit_recall) / (logit_precision + logit_recall)
+
+# Print the metrics
+print(paste("Accuracy:", logit_accuracy))
+print(paste("Precision:", logit_precision))
+print(paste("Recall (Sensitivity):", logit_recall))
+print(paste("F1 Score:", logit_F1))
+```
+
+The confusion matrix and associated statistics from the logistic regression model output tell us how well the model performed on the test dataset. Let’s interpret the results:
+
+### Confusion Matrix
+- **True Negatives (TN)**: 1774 non-defenders were correctly predicted as non-defenders.
+- **False Positives (FP)**: 187 non-defenders were incorrectly predicted as defenders.
+- **False Negatives (FN)**: 148 defenders were incorrectly predicted as non-defenders.
+- **True Positives (TP)**: 1116 defenders were correctly predicted as defenders.
+
+### Model Performance Metrics
+- **Accuracy**: Approximately 89.61% of the predictions were correct. The confidence interval (CI) for the accuracy is between 88.51% and 90.64%, which provides a range within which the true accuracy is likely to lie.
+- **No Information Rate (NIR)**: This is the accuracy that could be achieved by always predicting the most frequent class. In this case, it's 60.81%. Since the model's accuracy is significantly higher than the NIR (p-value < 2e-16), we can conclude that the model is useful.
+- **Kappa**: The Kappa statistic is a measure of how much better the classifier is compared to a classifier that makes predictions randomly, accounting for chance agreement. A Kappa of 0.7833 suggests a substantial agreement beyond chance.
+- **Mcnemar's Test**: This test checks the model's performance on the two types of errors (FP and FN).  A p-value less than (0.03788) suggests an imbalance, indicating that the model might not be equally good at predicting both classes.
+- **Sensitivity** (Recall or True Positive Rate): About 90.46% of actual defenders were correctly identified, suggesting the model is quite good at detecting the positive class.
+- **Specificity** (True Negative Rate): About 88.29% of actual non-defenders were correctly identified, which is also a good rate.
+- **Positive Predictive Value** (Precision): When the model predicts a player is a defender, it is correct 92.30% of the time.
+- **Negative Predictive Value**: When the model predicts a player is not a defender, it is correct 85.65% of the time.
+- **Prevalence**: This is the actual occurrence rate of defenders in the test dataset, which is 60.81%.
+- **Detection Rate**: This is the rate of true positive predictions; about 55.01% of all players were correctly identified as defenders by the model.
+- **Detection Prevalence**: This is the proportion of positive predictions; about 59.60% of all predictions were that players are defenders.
+- **Balanced Accuracy**: It averages sensitivity and specificity, and at 89.38%, it indicates the model is equally good at identifying both classes.
+
+### Conclusion
+The logistic regression model shows high accuracy and a strong ability to discriminate between defenders and non-defenders. The Kappa statistic indicates a substantial agreement, and the model's balance between sensitivity and specificity is good. The accuracy is much higher than the No Information Rate, which suggests that the model has predictive power beyond random guessing.  But the Mcnemar's test indicates potential bias in the model's ability to predict each class. 
+
+However, we should consider whether the classes are balanced. If they are not, accuracy may not be the best metric. In this case, the positive class prevalence is about 58%, indicating a somewhat balanced dataset, so accuracy is informative. Nonetheless, we should still consider both precision (positive predictive value) and recall (sensitivity) in the context of the problem.
+
+Overall, the model seems to perform well, but the final assessment should consider the specific cost of false positives versus false negatives in the practical application where the model will be used.
+
+```{r}
+players$IsDefender <- ifelse(grepl("B", players$player_positions), 1, 0) 
+
+# Exclude offensive features: 'pace', 'shooting', 'passing', 'dribbling'
+predictors <- c("defending", "physic", "height_cm", "weight_kg")
+
+# Prepare the dataset (ensure that you have no missing values in the predictors and the target variable)
+classification_data <- players %>% 
+  select(IsDefender, all_of(predictors)) %>% 
+  na.omit()
+
+# Create reduced training and testing sets
+set.seed(123) # for reproducibility
+training_rows <- createDataPartition(classification_data$IsDefender, p = 0.8, list = FALSE)
+reduced_train_data <- classification_data[training_rows, ]
+reduced_test_data <- classification_data[-training_rows, ]
+```
+
+# Fit Logistic Regression Model with reduced predictors
+
+```{r}
+# 
+logit_model <- glm(IsDefender ~ ., data = reduced_train_data, family = "binomial")
+logit_predictions <- predict(logit_model, newdata = reduced_test_data, type = "response")
+logit_predicted_classes <- ifelse(logit_predictions > 0.5, 1, 0)
+# Convert both predicted classes and actual classes to factors with the same levels
+logit_predicted_classes <- factor(logit_predicted_classes, levels = c(0, 1))
+reduced_test_data$IsDefender <- factor(reduced_test_data$IsDefender, levels = c(0, 1))
+# Create confusion matrix
+logit_confMatrix <- confusionMatrix(logit_predicted_classes, reduced_test_data$IsDefender)
+print(logit_confMatrix)
+```
+
+Comparing the confusion matrix of the reduced model to the previous full model, we can observe the following differences:
+
+### Confusion Matrix Comparison
+- The reduced model has more false negatives (403 vs. 187) and more false positives (272 vs. 148) than the full model. This suggests that the reduced model, which excludes offensive features, is less capable of correctly classifying defenders and non-defenders.
+- The reduced model has fewer true positives (992 vs. 1116) and true negatives (1558 vs. 1774), indicating a decrease in its ability to correctly identify each class.
+
+### Model Performance Metrics
+- **Accuracy**: The reduced model's accuracy is approximately 79.07%, which is lower than the full model's 89.61% accuracy. This suggests that excluding offensive features has led to a loss of predictive power.
+- **Kappa**: The Kappa statistic has decreased from 0.7833 to 0.5688, which still indicates a moderate agreement beyond chance, but it's lower than the full model, implying a diminished predictive quality.
+- **Mcnemar's Test**: The p-value is significantly low (5.624e-07), indicating a significant difference between the false positive and false negative rates. This could suggest that the model is more prone to one type of error over the other.
+- **Sensitivity**: Has decreased slightly (90.46% vs. 79.45%).
+- **Specificity**: Has decreased slightly (88.29% vs. 78.48%).
+- **Positive Predictive Value**: Has decreased (92.30% vs. 85.14%).
+- **Negative Predictive Value**: Has decreased significantly (85.65% vs. 71.11%).
+- **Balanced Accuracy**: Has decreased from 89.37% to 78.97%.
+
+### Conclusion
+The removal of offensive features from the model has resulted in a noticeable decrease in all performance metrics. The most significant reductions are in negative predictive value and accuracy. This indicates that offensive attributes such as 'pace', 'shooting', 'passing', and 'dribbling' contribute valuable information for predicting whether a player is a defender and that their exclusion impairs the model's predictive ability.
+
+From these observations, we can conclude that while simplifying the model can have benefits, such as improved interpretability and potentially reduced overfitting, it is important to carefully consider which features to exclude. Features that may seem less important could still be providing essential information for the model, and their exclusion can negatively impact performance.
+
+The results demonstrate the importance of including a comprehensive set of features that capture the full spectrum of influences on the target variable. For a nuanced decision like determining a player's position, which can be influenced by a variety of factors, a more complex model with a richer feature set appears to provide better performance.
+
+# Fit Logistic Regression Model on the full training data
+```{r Logistic Regression Full Model on Train Data}
+
+full_logit_model_train <- glm(IsDefender ~ ., data = train_data, family = "binomial")
+
+# Predict on the training data
+train_predictions <- predict(full_logit_model_train, newdata = train_data, type = "response")
+train_pred_classes <- ifelse(train_predictions > 0.5, 1, 0)
+
+# Convert predictions and actual classes to factors
+train_pred_classes <- factor(train_pred_classes, levels = c(0, 1))
+train_data$IsDefender <- factor(train_data$IsDefender, levels = c(0, 1))
+
+# Create confusion matrix for the training data
+train_confMatrix <- confusionMatrix(train_pred_classes, train_data$IsDefender)
+print(train_confMatrix)
+
+```
+# Fit Logistic Regression Model on the full test data
+
+
+```{r Logistic Regression Full Model on Test Data}
+# Predict on the test data
+test_predictions <- predict(full_logit_model_train, newdata = test_data, type = "response")
+test_pred_classes <- ifelse(test_predictions > 0.5, 1, 0)
+
+# Convert predictions and actual classes to factors
+test_pred_classes <- factor(test_pred_classes, levels = c(0, 1))
+test_data$IsDefender <- factor(test_data$IsDefender, levels = c(0, 1))
+
+# Create confusion matrix for the test data
+test_confMatrix <- confusionMatrix(test_pred_classes, test_data$IsDefender)
+print(test_confMatrix)
+```
+
+# Fit Logistic Regression Model on the subset
+
+
+```{r subser}
+# Example: Analyze subset where 'defending' is above average
+subset_data <- train_data[train_data$defending > mean(train_data$defending), ]
+subset_predictions <- predict(full_logit_model_train, newdata = subset_data, type = "response")
+subset_pred_classes <- ifelse(subset_predictions > 0.5, 1, 0)
+subset_pred_classes <- factor(subset_pred_classes, levels = c(0, 1))
+subset_data$IsDefender <- factor(subset_data$IsDefender, levels = c(0, 1))
+
+# Confusion matrix for the subset
+subset_confMatrix <- confusionMatrix(subset_pred_classes, subset_data$IsDefender)
+print(subset_confMatrix)
+
+```
+
+From the results provided, you have several sets of confusion matrices and corresponding statistics for different scenarios: the full model's performance on the training data, on the test data, and on a subset of the training data where the 'defending' attribute is above average. Here’s how to interpret and compare these results:
+
+### Performance on Training Data
+- **Accuracy**: 89.58%, suggesting the model fits the training data well.
+- **Sensitivity** and **Specificity**: High values (90.79% and 87.79%, respectively), indicating effective identification of both classes.
+- **Positive Predictive Value (PPV)** and **Negative Predictive Value (NPV)**: High values (91.66% and 86.57%), indicating reliable predictions.
+- **Kappa**: 0.7839, indicating substantial agreement.
+- **Balanced Accuracy**: 89.29%, showing good balance between sensitivity and specificity.
+- The **P-Value** from Mcnemar’s Test is significant, indicating an imbalance in the type of errors (more false negatives than false positives).
+
+### Performance on Test Data
+- **Accuracy**: Very similar to the training data at 89.61%, indicating that the model generalizes well to unseen data.
+- **Sensitivity** and **Specificity**: Consistently high as in the training data, further confirming the model's robustness.
+- **PPV** and **NPV**, **Kappa**, and **Balanced Accuracy**: Also similar to the training data results.
+- The model maintains its predictive quality on new data, as shown by the similar statistics across the training and testing datasets.
+
+### Performance on Subset of Training Data (Defending > Average)
+- **Accuracy**: Slightly lower at 84.14% compared to the full training and testing datasets.
+- **Sensitivity**: Significantly lower at 74.34%, indicating the model struggles somewhat to identify defenders correctly within this subset.
+- **Specificity** remains high.
+- **PPV** decreased to 0.7888 meaning positive observations are less likely to be actually positive
+- **Balanced Accuracy**: Decreases to 81.86%, reflecting the drop in sensitivity.
+- The **Kappa** value is also lower at 0.6458, indicating a moderate agreement beyond chance, which is a decrease compared to the full data results.
+
+### Comparing Results and Conclusions
+1. **Generalization**: The model generalizes well from training to test data, showing minimal overfitting as the accuracy and other metrics are very consistent across these datasets.
+2. **Subset Analysis**: The model's performance drops in a subset of data where defending is above average. This could indicate that as defending values increase, other features might interact differently affecting the model's ability to generalize within this context.
+3. **Practical Implications**: The lower performance in the subset could suggest the need for more complex modeling techniques that can handle higher interactions or non-linearities, particularly for players with higher defending skills.
+
+Overall, the results suggest that model is robust and performs well under general conditions but may require adjustments or more sophisticated methods to handle data subsets where player attributes significantly deviate from the norm. It also underscores the importance of examining model performance across different data segments to ensure consistent reliability.
+
+
+
+```{r knn tuning}
+# Prepare your data if not already done
+# train_data, test_data
+# Set up cross-validation - sets up how the training process should handle cross-validation.
+train_control <- trainControl(
+  method = "cv",
+  number = 10,  # using 10-fold cross-validation
+  savePredictions = "final"
+)
+# Define the tuning grid
+k_values <- data.frame(k = seq(1, 50, by = 1))  # testing k from 1 to 30
+# Train the model
+set.seed(123)  # for reproducibility
+# This function does the heavy lifting by training a k-NN model for each k value in the defined grid and evaluating its performance using the specified cross-validation strategy.
+knn_results <- train(
+  x = train_data[, predictors, drop = FALSE],
+  y = train_data$IsDefender,
+  method = "knn",
+  # This parameter allows you to pass the range of k values you want to test.
+  tuneGrid = k_values,
+  trControl = train_control,
+  # "scale": This ensures that the feature scaling is performed, which is crucial for k-NN models because they rely on distance calculations.
+  preProcess = "scale"
+)
+# Print the best model's results
+print(knn_results)
+plot(knn_results)
+```
+
+```{r knn prob}
+
+# Train k-Nearest Neighbors model
+# Target variable is a factor for classification
+train_data$IsDefender <- as.factor(train_data$IsDefender)
+
+# Train k-Nearest Neighbors model with class probabilities
+knn_fit <- knn3(x = train_data[, predictors, drop = FALSE], y = train_data$IsDefender, k = 35, prob = TRUE)
+
+# Predict probabilities on the test set
+# Note: Ensure that test_data contains the same predictors as train_data
+knn_prob <- predict(knn_fit, newdata = test_data[, predictors, drop = FALSE], type = "prob")[,2]
+
+# Convert probabilities to class predictions using a 0.5 threshold
+knn_class_predictions <- ifelse(knn_prob > 0.5, "1", "0")
+
+# Ensure the predictions are factors with the same levels as the test data target variable
+knn_class_predictions <- factor(knn_class_predictions, levels = levels(train_data$IsDefender))
+
+# Generate the confusion matrix
+knn_confMatrix <- confusionMatrix(knn_class_predictions, test_data$IsDefender)
+
+# Print the confusion matrix
+print(knn_confMatrix)
+
+# Extract metrics from the confusion matrix
+knn_accuracy <- knn_confMatrix$overall['Accuracy']
+knn_precision <- knn_confMatrix$byClass['Precision']
+knn_recall <- knn_confMatrix$byClass['Sensitivity']
+knn_F1 <- 2 * (knn_precision * knn_recall) / (knn_precision + knn_recall)
+
+# Print the metrics
+print(paste("k-NN Accuracy:", knn_accuracy))
+print(paste("k-NN Precision:", knn_precision))
+print(paste("k-NN Recall (Sensitivity):", knn_recall))
+print(paste("k-NN F1 Score:", knn_F1))
+```
+
+```{r knn prob train}
+# Predict probabilities on the training set itself
+knn_prob_train <- predict(knn_fit, newdata = train_data[, predictors, drop = FALSE], type = "prob")[,2]
+
+# Convert probabilities to class predictions using a 0.5 threshold
+knn_class_predictions <- ifelse(knn_prob_train > 0.5, "1", "0")
+
+# Ensure the predictions are factors with the same levels as the training data target variable
+knn_class_predictions <- factor(knn_class_predictions, levels = levels(train_data$IsDefender))
+
+# Generate the confusion matrix on the training data
+knn_train_confMatrix <- confusionMatrix(knn_class_predictions, train_data$IsDefender)
+
+# Print the confusion matrix
+print(knn_train_confMatrix)
+```
+
+To compare the performance of the k-Nearest Neighbors (k-NN) model on both the training and test datasets, you've provided confusion matrices and associated statistics from each dataset. Here's a detailed comparison of these two performance outcomes:
+
+### Overview
+- **Test Data Results**: Performance measures when the model is used to predict data it has not seen during training.
+- **Training Data Results**: Performance measures when the model is used to predict the data it was trained on, which typically shows how well the model fits the training data.
+
+### Test Data Performance
+- **Accuracy**: 77.64%
+- **Kappa**: 0.5436
+- **Sensitivity (Recall) for '0'**: 76.59%
+- **Specificity for '0'**: 79.27%
+- **Positive Predictive Value (Precision) for '0'**: 85.15%
+- **Negative Predictive Value for '0'**:68.58%
+- **Balanced Accuracy**: 77.93%
+
+### Training Data Performance
+- **Accuracy**: 79.63%
+- **Kappa**: 0.5879
+- **Sensitivity (Recall) for '0'**: 77.32%
+- **Specificity for '0'**: 83.05%
+- **Positive Predictive Value (Precision) for '0'**: 87.09%
+- **Negative Predictive Value for '0'**: 71.23%
+- **Balanced Accuracy**: 80.19%
+
+### Key Comparisons:
+- **Accuracy**: The model is slightly more accurate on the training data (79.63%) compared to the test data (77.64%). This is expected as models generally perform better on the data they were trained on.
+- **Kappa**: Indicates a moderate agreement in both scenarios but slightly higher in the training data, suggesting better performance consistency.
+- **Sensitivity and Specificity**: The model is slightly more sensitive on the training data, meaning it's better at identifying true positives during training. Specificity is nearly the same, indicating consistent performance in identifying true negatives across both datasets.
+- **Positive and Negative Predictive Values**: These values are higher on the training data, indicating that the model is more reliable in its predictions when dealing with known data.
+- **Balanced Accuracy**: Shows a marginal improvement in the training data compared to the test data, suggesting a slightly better balance between sensitivity and specificity during training.
+
+### Implications:
+- **Generalization**: The similar performance metrics (though slightly better on training) suggest that the model generalizes reasonably well but could potentially be improved to reduce overfitting and enhance predictive performance on unseen data.
+- **Model Tuning**: Consider tuning model parameters (like `k`) or using feature selection/engineering to potentially enhance model performance, especially on unseen data.
+- **Further Evaluation**: It's beneficial to look into other metrics such as F1-score, ROC curves, and AUC, especially for imbalance class scenarios, to gain a deeper understanding of model performance.
+
+Overall, the k-NN model shows good performance, but like most models, it performs slightly better on training data. Your analysis should consider whether the slight decrease in performance on test data is acceptable based on your specific use case requirements.
+
+
+When determining the optimal number of neighbors (k) for the k-Nearest Neighbors model, I considered how the accuracy of the model changes as k varies. The plot of model accuracy against k displays a pattern where the model's performance improves significantly with an initial increase in the number of neighbors, which is reflective of the model leveraging more data to make informed decisions.
+
+*Around k=20, the accuracy begins to level off, indicating that adding more neighbors beyond this point doesn't substantially improve the model's performance. This plateau suggests that we've captured the essential patterns in the data by this stage, and further increases in k result primarily in computational redundancy rather than enhanced predictive power.
+
+Given this observation, I chose k=35, which is on this plateau. This choice is strategic for a few reasons:
+
+1. It avoids the risks associated with a too-low k, such as noise and outlier sensitivity, which could compromise the model's generalizability.
+2. It prevents the complexity and potential computational burden that a too-high k would introduce, which might be unnecessary given the lack of significant accuracy gains.
+3. It positions us in a 'safe zone' where the model is neither too simplistic to capture the nuances of the data nor too complex to be bogged down by noise.
+
+Lastly, the selection of k=35 also demonstrates stability in the model's performance. There's no indication of overfitting, as we might expect if the accuracy started to decline with larger values of k. This balance between bias and variance, or simplicity and complexity, suggests that k=35 is a reasonable choice for our model, striking a good balance between accuracy and computational efficiency.
+
+
+```{r }
+# Train a Random Forest model with OOB error tracking
+set.seed(123)
+rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, ntree = 500, do.trace = 100, keep.forest = TRUE)
+
+# Plot OOB error
+plot(rf_model$err.rate[, "OOB"], type = "l", xlab = "Number of Trees", ylab = "OOB Error Rate")
+
+```
+Out-of-Bag (OOB) error is a method of measuring the prediction error of random forests, gradient boosting, and other ensemble classifiers that bootstrap the data, i.e., sample the data with replacement. Here's the process in brief:
+
+1. **Bootstrap Sampling**: When building each tree, the algorithm samples from the original dataset with replacement, to create a bootstrap dataset. This bootstrap dataset is used to grow the tree. Because sampling is with replacement, some observations may be repeated in the bootstrap dataset while others are left out.
+
+2. **OOB Instances**: The left-out observations that are not included in the bootstrap sample for creating a tree are known as OOB instances. Since these instances are not used in the construction of a particular tree, they can be used as a test set to assess the performance of that tree.
+
+3. **Error Estimation**: For each tree, the OOB error is the prediction error calculated on the OOB instances. It's like a built-in cross-validation method at each step of the ensemble model building.
+
+4. **Ensemble OOB Error**: The overall OOB error for the forest is calculated by averaging the OOB errors across all trees in the ensemble.
+
+OOB error provides a handy and unbiased estimate of the model accuracy without needing a separate validation set or cross-validation, which can be especially useful when the dataset is small.
+
+The plot demonstrates the Out-of-Bag (OOB) error rate for a Random Forest model as a function of the number of trees included in the model. To interpret the plot and decide on the optimal number of trees, consider the following points:
+
+1. **Sharp Decline**: At the beginning, as we start from a small number of trees, there is a significant decrease in the OOB error rate. This indicates that adding more trees initially leads to a substantial improvement in the model's ability to predict accurately.
+
+2. **Flattening Curve**: As the number of trees increases, the rate of decrease in the OOB error slows down and the curve begins to flatten. This indicates that each additional tree contributes less to improving the model's performance.
+
+3. **Stabilization Point**: Beyond a certain number of trees, the OOB error rate stabilizes and we see very minimal fluctuations. This suggests that the model has reached its performance limit given the current data and hyperparameters.
+
+4. **Selection of Number of Trees**: The choice of the optimal number of trees should be where the OOB error rate has stabilized and before it plateaus completely to avoid unnecessary computation and potential overfitting. In this plot, around 100 trees could be a practical choice since the OOB error does not significantly improve after this point.
+
+5. **Minimal Gains Beyond**: After approximately 100 trees, the gains from adding more trees are minimal. The OOB error rates between 100 and 500 trees are close, indicating that increasing the number of trees beyond 100 doesn't lead to meaningful improvements in this case.
+
+In conclusion, given the pattern observed in the OOB error rate plot, choosing 100 trees for the Random Forest model would likely be sufficient and computationally efficient while maintaining high predictive accuracy.
+
+
+```{r rf test}
+# Fit the Random Forest model
+rf_model <- randomForest(IsDefender ~ ., data = train_data, importance = TRUE, ntree = 100)
+
+# Get the importance of predictors
+importance <- importance(rf_model)
+print(importance)
+
+# Predict on the test data to get the probabilities
+rf_prob <- predict(rf_model, newdata = test_data, type = "prob")[, "1"]
+
+# Convert probabilities to binary class predictions using a 0.5 threshold
+rf_predictions <- ifelse(rf_prob > 0.5, "1", "0")
+
+# Convert rf_predictions to a factor with levels corresponding to the model's classes
+rf_predictions <- factor(rf_predictions, levels = levels(train_data$IsDefender))
+
+# Generate the confusion matrix
+conf_mat <- confusionMatrix(rf_predictions, test_data$IsDefender)
+
+# Print the confusion matrix and related statistics
+print(conf_mat)
+
+# Extract metrics from the confusion matrix
+rf_accuracy <- conf_mat$overall['Accuracy']
+rf_precision <- conf_mat$byClass['Precision']
+rf_recall <- conf_mat$byClass['Sensitivity']
+rf_F1 <- 2 * (rf_precision * rf_recall) / (rf_precision + rf_recall)
+
+# Print the metrics
+print(paste("Random Forest Accuracy:", rf_accuracy))
+print(paste("Random Forest Precision:", rf_precision))
+print(paste("Random Forest Recall (Sensitivity):", rf_recall))
+print(paste("Random Forest F1 Score:", rf_F1))
+```
+
+The output you provided includes the feature importance scores from a Random Forest model and the performance metrics from a confusion matrix based on predictions made on the test data. Here’s a detailed explanation of each part of this output:
+
+### Feature Importance
+The `importance` function from the Random Forest model provides two types of metrics:
+- **MeanDecreaseAccuracy**: Indicates how much the accuracy of the model decreases when a feature is randomly permuted (shuffled). This metric reflects the impact of the feature on the model’s predictive accuracy.
+- **MeanDecreaseGini**: Represents the total decrease in node impurity (measured by the Gini index) that results from splits over that feature, averaged over all trees. A higher value indicates a more important feature.
+
+**Analysis of Features:**
+- **Defending** has the highest importance scores in both metrics (MeanDecreaseAccuracy = 85.33, MeanDecreaseGini = 2118.21), making it the most influential feature in predicting whether a player is a defender or not.
+- **Shooting** and **Pace** also show high importance, especially in the Gini index, suggesting these features significantly help in dividing the player data into distinct, homogeneous groups.
+- **Physic, Height_cm**, and **Weight_kg** have lower importance scores, indicating they have less impact on the model's predictions compared to skills-related features.
+
+
+```{r rf train}
+
+# Predict on the training data to get the probabilities
+rf_prob_train <- predict(rf_model, newdata = train_data, type = "prob")[, "1"]
+
+# Convert probabilities to binary class predictions using a 0.5 threshold
+rf_predictions_train <- ifelse(rf_prob_train > 0.5, "1", "0")
+
+# Ensure that train_data$IsDefender is a factor with levels as expected by the model
+train_data$IsDefender <- factor(train_data$IsDefender, levels = levels(rf_model$y))
+
+# Ensure that rf_predictions_train is a factor with the same levels as train_data$IsDefender
+rf_predictions_train <- factor(rf_predictions_train, levels = levels(train_data$IsDefender))
+
+# Generate the confusion matrix for the training data
+conf_mat_train <- confusionMatrix(rf_predictions_train, train_data$IsDefender)
+
+# Print the confusion matrix and related statistics for the training data
+print(conf_mat_train)
+```
+To compare the model's performance on the test data with its performance on the training data, we examine the confusion matrix statistics for both.
+
+**On the Test Data:**
+- Accuracy: 89.64%, indicating the proportion of total correct predictions.
+- Kappa: 0.782, which measures the agreement between predicted and actual classifications, corrected for chance agreement.
+- Sensitivity: 92.10%, indicating the model's ability to correctly identify the positive class.
+- Specificity: 85.84%, indicating the model's ability to correctly identify the negative class.
+- The Positive Predictive Value (PPV) and Negative Predictive Value (NPV) are above 87%, suggesting good reliability in the predictions.
+- The Balanced Accuracy, which is the average of sensitivity and specificity, is at 88.97%, reflecting a good balance between true positive rate and true negative rate.
+
+**On the Training Data:**
+- Accuracy: Almost perfect at 99.99%, indicating the model predicts nearly all training cases correctly.
+- Kappa: 0.9998, showing almost perfect agreement.
+- Sensitivity and Specificity are virtually 100%, which could indicate the model is overfitted to the training data.
+- PPV and NPV are 99.99% and 100%, respectively.
+- Balanced Accuracy is also nearly perfect at 99.99%.
+
+**Conclusions:**
+- The Random Forest model performs exceptionally well on the training data, possibly too well, indicating that it may have overfitted to the training set. This is not uncommon with Random Forest models, especially when the default settings allow trees to grow without much constraint.
+- The model's performance on the test data, while very good, is not as high as on the training data, which is expected due to the model being exposed to new, unseen data.
+- Despite the drop in performance metrics from training to testing, the results on the test data are still strong, indicating that the model has good generalization capabilities.
+- The relatively high values for Kappa, Sensitivity, Specificity, PPV, NPV, and Balanced Accuracy on the test data suggest that the model is robust and reliable in making predictions on new data.
+
+In practice, if a model shows such high accuracy on the training data but lower on the test data, one might investigate further to fine-tune the model to avoid overfitting and improve generalization on unseen data. This can be done by tuning hyperparameters, pruning the trees, or incorporating more training data.
+
+The output you provided includes the feature importance scores from a Random Forest model and the performance metrics from a confusion matrix based on predictions made on the test data. Here’s a detailed explanation of each part of this output:
+
+
+```{r Naive Bayes }
+naive_model <- naiveBayes(IsDefender ~ ., data = train_data)
+# Calculating probabilities for Naive Bayes Model
+naive_probs <- predict(naive_model, newdata = test_data, type = "raw")
+naive_predictions_probs <- naive_probs[,2] # Assuming class '1' probabilities are in the second column
+
+# Predict class labels for Naive Bayes Model
+naive_predictions <- predict(naive_model, newdata = test_data)
+# Now you have naive_predictions for the confusionMatrix
+naive_confMatrix <- confusionMatrix(naive_predictions, test_data$IsDefender)
+print(naive_confMatrix)
+
+# Extract metrics from the confusion matrix
+naive_accuracy <- naive_confMatrix$overall['Accuracy']
+naive_precision <- naive_confMatrix$byClass['Precision']
+naive_recall <- naive_confMatrix$byClass['Sensitivity']
+naive_F1 <- 2 * (naive_precision * naive_recall) / (naive_precision + naive_recall)
+# Print the metrics
+print(paste("Naive Bayes Accuracy:", naive_accuracy))
+print(paste("Naive Bayes Precision:", naive_precision))
+print(paste("Naive Bayes Recall (Sensitivity):", naive_recall))
+print(paste("Naive Bayes F1 Score:", naive_F1))
+```
+
+```{r}
+# Calculating probabilities for Naive Bayes Model on training data
+naive_train_probs <- predict(naive_model, newdata = train_data, type = "raw")
+naive_train_predictions_probs <- naive_train_probs[,2] # Assuming class '1' probabilities are in the second column
+
+# Predict class labels for Naive Bayes Model on training data
+naive_train_predictions <- predict(naive_model, newdata = train_data)
+# Confusion Matrix for training data predictions
+naive_train_confMatrix <- confusionMatrix(naive_train_predictions, train_data$IsDefender)
+print(naive_train_confMatrix)
+```
+
+
+```{r}
+# ROC and AUC for Logistic Regression
+logit_roc <- roc(test_data$IsDefender ~ logit_predictions, data = test_data)
+logit_auc <- auc(logit_roc)
+
+# ROC and AUC for Naive Bayes - using the corrected probabilities
+naive_roc <- roc(test_data$IsDefender ~ naive_predictions_probs, data = test_data)
+naive_auc <- auc(naive_roc)
+
+# ROC and AUC for kNN
+knn_roc <- roc(response = test_data$IsDefender, predictor = knn_prob)
+knn_auc <- auc(knn_roc)
+
+# ROC and AUC for Random Forest
+rf_roc <- roc(response = test_data$IsDefender, predictor = rf_prob)
+rf_auc <- auc(rf_roc)
+
+# Plotting ROC Curves for all models
+plot(logit_roc, col = "blue", main = "ROC Curves for Classification Models")
+lines(naive_roc, col = "red")
+lines(knn_roc, col = "green")
+lines(rf_roc, col = "purple")
+legend("bottomright",
+       legend = c(sprintf("Logistic Regression (AUC = %.2f)", logit_auc),
+                  sprintf("Naive Bayes (AUC = %.2f)", naive_auc),
+                  sprintf("kNN (AUC = %.2f)", knn_auc),
+                  sprintf("Random Forest (AUC = %.2f)", rf_auc)),
+       col = c("blue", "red", "green", "purple"), lwd = 2)
+
+```
+
+```{r}
+# Compile AUC values into a summary table for all models
+auc_summary_all <- tibble(
+  Model = c("Logistic Regression", "Naive Bayes", "kNN"),
+  AUC = c(logit_auc, naive_auc, knn_auc)
+)
+
+# Display the AUC summary table for all models
+knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Models")
+
+```
+
+```{r}
+
+# Create a summary table
+model_performance <- data.frame(
+  Model = c("Logistic Regression", "Naive Bayes", "k-NN", "Random Forest"),
+  Accuracy = c(logit_accuracy, naive_accuracy, knn_accuracy, rf_accuracy),
+  Precision = c(logit_precision, naive_precision, knn_precision, rf_precision),
+  Recall = c(logit_recall, naive_recall, knn_recall, rf_recall),
+  F1_Score = c(logit_F1, naive_F1, knn_F1, rf_F1),
+  AUC = c(logit_auc, naive_auc, knn_auc, rf_auc)
+)
+
+# Print the summary table
+print(model_performance)
+
+# Plot ROC curves for all models
+plot.roc(test_data$IsDefender, logit_predictions, col = "blue")
+lines.roc(test_data$IsDefender, naive_predictions_probs, col = "red")
+lines.roc(test_data$IsDefender, knn_prob, col = "green")
+lines.roc(test_data$IsDefender, rf_prob, col = "purple")
+legend("bottomright", legend = c("Logistic", "Naive Bayes", "k-NN", "Random Forest"),
+       col = c("blue", "red", "green", "purple"), lwd = 2)
+
+```
+
+##Model Evaluation
+Overall, the models displayed varying levels of performance based on different metrics:
+
+# Accuracy:
+- **Logistic Regression:** 89.61%
+- **k-Nearest Neighbors (kNN):** 77.64%
+- **Naive Bayes:** 84.19%
+- **Random Forest:** 84.01%
+
+# Kappa (measure of agreement):
+- **Logistic Regression:** 0.7833
+- **kNN:** 0.5436
+- **Naive Bayes:** 0.6663
+- **Random Forest:** 0.6657
+
+# Sensitivity (Recall):
+- **Logistic Regression:** 90.46%
+- **kNN:** 76.59%
+- **Naive Bayes:** 88.07%
+- **Random Forest:** 87.93%
+
+# Specificity:
+- **Logistic Regression:** 88.29%
+- **kNN:** 79.27%
+- **Naive Bayes:** 78.16%
+- **Random Forest:** 78.21%
+
+# Positive Predictive Value (Precision):
+- **Logistic Regression:** 92.30%
+- **kNN:** 85.15%
+- **Naive Bayes:** 86.22%
+- **Random Forest:** 85.65%
+
+# Negative Predictive Value:
+- **Logistic Regression:** 85.65%
+- **kNN:** 68.58%
+- **Naive Bayes:** 80.85%
+- **Random Forest:** 81.42%
+
+# Balanced Accuracy:
+- **Logistic Regression:** 89.37%
+- **kNN:** 77.93%
+- **Naive Bayes:** 83.12%
+- **Random Forest:** 83.07%
+
+# ROC Curve Comparison
+The Area Under the Curve (AUC) values for each model, which indicate the models' ability to discriminate between classes, were as follows:
+
+- **Logistic Regression:** 0.8687
+- **kNN:** 0.8686
+- **Naive Bayes:** 0.9301
+- **Random Forest:** 0.9627
+
+# F1 Score
+- **Logistic Regression:** 0.9137
+- **k-Nearest Neighbors (kNN):** 0.8097
+- **Naive Bayes:** 0.8713
+- **Random Forest:** 0.9154
+
+### Logistic Regression Evaluation
+The Logistic Regression model demonstrated exemplary performance across several metrics.
+
+### k-Nearest Neighbors (kNN) Evaluation
+The k-Nearest Neighbors model, while not performing as strongly as Logistic Regression, still shows reasonable effectiveness.
+
+### Naive Bayes Evaluation
+Naive Bayes stands out with its discriminative ability among the models, particularly noted for its robust handling of class probabilities.
+
+### Random Forest Evaluation
+The Random Forest model showcases its strengths primarily in its exceptional ability to distinguish between classes.
+
+## Conclusion
+Logistic Regression emerges as the most robust model in terms of overall metrics and balance. However, for tasks requiring exceptional differentiation between classes, the Random Forest model, with the highest AUC, may be the best choice. This detailed analysis assists in selecting the appropriate model based on specific needs, whether focusing on accuracy, discrimination, or balancing error types in predictions.
