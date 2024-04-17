@@ -990,6 +990,10 @@ auc_summary_all <- tibble(
 knitr::kable(auc_summary_all, caption = "AUC Summary for All Classification Models")
 
 ```
+## auROC
+Area Under the Receiver Operating Characteristic Curve (auROC) are applicable for all cases
+# Potential obstacles 
+Class Imbalance, Multi-class Classification
 
 ## Model Evaluation
 Overall, the models displayed varying levels of performance based on different metrics:
