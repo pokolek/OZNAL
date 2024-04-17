@@ -274,10 +274,22 @@ players$IsDefender <- ifelse(grepl("B", players$player_positions), 1, 0)
 #
 predictors <- c("pace", "shooting", "passing", "dribbling", "defending", "physic", "height_cm", "weight_kg")
 
+
+
 # Prepare the dataset (ensure that you have no missing values in the predictors and the target variable)
 classification_data <- players %>% 
   select(IsDefender, all_of(predictors)) %>% 
   na.omit()
+
+# Create a bar plot for the IsDefender distribution
+ggplot(classification_data, aes(x = as.factor(IsDefender))) +
+  geom_bar() +
+  labs(title = "Distribution of IsDefender",
+       x = "Defender Status",
+       y = "Count") +
+  scale_x_discrete(labels = c("0" = "Not Defender", "1" = "Defender")) +
+  theme_minimal()
+
 
 # Create training and testing sets
 set.seed(123) # for reproducibility
