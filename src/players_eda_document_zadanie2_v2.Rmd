@@ -1053,7 +1053,7 @@ The logistic regression model demonstrated strong performance with an accuracy o
 The kNN model showed a lower performance compared to logistic regression with an accuracy of 78.26%, precision of 86.59%, and recall of 76.03%. Its F1 score was 0.8097, and the AUC stood at 0.8686, which are respectable but highlight room for improvement, particularly in terms of precision and handling noise within the dataset.
 
 ### Naive Bayes Evaluation
-Naive Bayes, while the fastest, scored an accuracy of 84.19%, with precision and recall at 86.22% and 88.07% respectively. The model's F1 score was 0.8713, and it achieved the highest AUC of 0.9301, suggesting excellent class separation ability. However, its lower specificity and the assumption of feature independence could be limiting factors.
+Naive Bayes, while the fastest, scored an accuracy of 84.19%, with precision and recall at 86.22% and 88.07% respectively. The model's F1 score was 0.8713, and it achieved the AUC of 0.9301, suggesting excellent class separation ability. However, its lower specificity and the assumption of feature independence could be limiting factors.
 
 ### Random Forest Evaluation
 Random Forest emerged as a strong contender with the highest accuracy of 89.64%, precision of 90.98%, and recall of 92.10%. Its F1 score was 0.9154, and it boasted the best AUC of 0.9627, indicating superior predictive and discriminative performance. Despite its computational intensity, the model's ability to handle complex interactions and feature importance effectively makes it extremely valuable.
